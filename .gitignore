@@ -1,0 +1,17 @@
+Makefile.in
+Makefile
+src/lexer.cc
+src/*.o
+stamp-h1
+configure
+configure~
+config.h
+config.h.in~
+config.log
+config.status
+src/.deps
+aclocal.m4
+autom4te.cache
+auxx/
+kcp
+src/kcp
