@@ -14,6 +14,18 @@ using std::cout, std::endl;
 #define OUT(X)
 #endif
 
+static int col = 0;
+static int last_line = 0;
+
+#define YY_USER_ACTION \
+  printf("matched token '%s' of len %d\n", yytext, yyleng); \
+  if (last_line != yylineno) \
+    last_line = yylineno, col = yyleng; \
+  else \
+    col += yyleng;
+
+#define matched(X) return token(token::X, yytext, yylineno, col-yyleng)
+
 %}
 
 %option noyywrap
@@ -26,12 +38,11 @@ ALNUM ({DIGIT}|{ALPHA})
 
 %s COMMENT
 %s LINE_COMMENT
-%s EATIT
 
 
 %%
 
-<<EOF>>										return token(token::eof, "", 0);
+<<EOF>>										matched(eof);
 <INITIAL>{WHITE_SPACE}						/*ignore*/
 
 <INITIAL>"//"								BEGIN(LINE_COMMENT);
@@ -43,12 +54,12 @@ ALNUM ({DIGIT}|{ALPHA})
 <COMMENT>"*/"       BEGIN(INITIAL);
 <COMMENT>.*         OUT("comment: " << yytext);
 
-<INITIAL>"-"?{DIGIT}+("."{DIGIT}*("e""-"?{DIGIT}+)?)?			{	OUT("number: " << yytext);		return token(token::number, yytext, yylineno);	}
+<INITIAL>"-"?{DIGIT}+("."{DIGIT}*("e""-"?{DIGIT}+)?)?			{	OUT("number: " << yytext);		matched(number);	}
 
 
-<INITIAL>{ALPHA}{ALNUM}*        return token(token::identifier, yytext, yylineno);
+<INITIAL>{ALPHA}{ALNUM}*        matched(identifier);
 
-<INITIAL>.									{ 	OUT("char: " << (int)yytext[0]) << "[" << yytext[0] << "]"; }
+<INITIAL>.									{ 	OUT("char: " << (int)yytext[0] << "[" << yytext[0] << "]"); }
 
 
 
@@ -71,5 +82,6 @@ std::vector<token> lex_input(const std::string &filename) {
       return tokens;
     tokens.emplace_back(t);
   }
+  return tokens;
 }
 

@@ -14,7 +14,7 @@ struct token {
 	enum type type;
 	std::string text;
 
-	token(enum type t, const char *str, int line) : type(t), text(str), line(line) {
+	token(enum type t, const char *str, int line, int col) : type(t), text(str), line(line), pos(col) {
 	}
 
 	static std::string type_name(enum type t);
