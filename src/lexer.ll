@@ -48,19 +48,42 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"//"								BEGIN(LINE_COMMENT);
 <INITIAL>"/*"								BEGIN(COMMENT);
 
-<LINE_COMMENT>\n							BEGIN(INITIAL);
-<LINE_COMMENT>.*							{	OUT("line comment: " << yytext); }
+<INITIAL>"+"  matched(plus);
+<INITIAL>"*"  matched(star);
+<INITIAL>"-"  matched(minus);
+<INITIAL>"/"  matched(slash);
+<INITIAL>"("  matched(paren_l);
+<INITIAL>")"  matched(paren_r);
+<INITIAL>"["  matched(bracket_l);
+<INITIAL>"]"  matched(bracket_r);
+<INITIAL>"{"  matched(brace_l);
+<INITIAL>"}"  matched(brace_r);
+<INITIAL>","  matched(comma);
+<INITIAL>";"  matched(semicolon);
+<INITIAL>"="  matched(equals);
+<INITIAL>"*="  matched(star_equals);
+<INITIAL>"/="  matched(slash_equals);
+<INITIAL>"%="  matched(percent_equals);
+<INITIAL>"+="  matched(plus_equals);
+<INITIAL>"-="  matched(minus_equals);
+<INITIAL>"<<="  matched(left_left_equals);
+<INITIAL>">>="  matched(right_right_equals);
+<INITIAL>"&="  matched(amp_equals);
+<INITIAL>"^="  matched(hat_equals);
+<INITIAL>"|="  matched(pipe_equals);
 
-<COMMENT>"*/"       BEGIN(INITIAL);
-<COMMENT>.*         OUT("comment: " << yytext);
 
 <INITIAL>"-"?{DIGIT}+("."{DIGIT}*("e""-"?{DIGIT}+)?)?			{	OUT("number: " << yytext);		matched(number);	}
-
 
 <INITIAL>{ALPHA}{ALNUM}*        matched(identifier);
 
 <INITIAL>.									{ 	OUT("char: " << (int)yytext[0] << "[" << yytext[0] << "]"); }
 
+<LINE_COMMENT>\n							BEGIN(INITIAL);
+<LINE_COMMENT>.*							{	OUT("line comment: " << yytext); }
+
+<COMMENT>"*/"       BEGIN(INITIAL);
+<COMMENT>.*         OUT("comment: " << yytext);
 
 
 
