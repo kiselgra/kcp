@@ -27,18 +27,38 @@ namespace ast {
 	struct n_ary;
 	struct sequence;
 	struct arith;
+	struct logical;
+	struct equality;
+	struct relational;
+	struct cast;
+	struct unary;
+	struct prefix;
+	struct postfix;
+	struct call;
+	struct subscript;
+	struct member_access;
 	struct literal;
 	struct number;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
-		virtual void visit(expression  *node) {}
-		virtual void visit(conditional *node) { forward(expression); }
-		virtual void visit(n_ary       *node) { forward(expression); }
-		virtual void visit(sequence    *node) { forward(n_ary); }
-		virtual void visit(arith       *node) { forward(n_ary); }
-		virtual void visit(literal     *node) { forward(expression); }
-		virtual void visit(number      *node) { forward(literal); }
+		virtual void visit(expression    *node) {}
+		virtual void visit(conditional   *node) { forward(expression); }
+		virtual void visit(n_ary         *node) { forward(expression); }
+		virtual void visit(sequence      *node) { forward(n_ary); }
+		virtual void visit(arith         *node) { forward(n_ary); }
+		virtual void visit(logical       *node) { forward(n_ary); }
+		virtual void visit(equality      *node) { forward(n_ary); }
+		virtual void visit(relational    *node) { forward(n_ary); }
+		virtual void visit(cast          *node) { forward(expression); }
+		virtual void visit(unary         *node) { forward(expression); }
+		virtual void visit(prefix        *node) { forward(unary); }
+		virtual void visit(postfix       *node) { forward(unary); }
+		virtual void visit(call          *node) { forward(expression); }
+		virtual void visit(subscript     *node) { forward(expression); }
+		virtual void visit(member_access *node) { forward(expression); }
+		virtual void visit(literal       *node) { forward(expression); }
+		virtual void visit(number        *node) { forward(literal); }
 		#undef forward
 	};
 
@@ -86,6 +106,77 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
+	struct bitwise : public n_ary {
+		bitwise(token op, pointer_to<expression> lhs, pointer_to<expression> rhs) : n_ary(op, lhs, rhs) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct logical : public n_ary {
+		logical(token op, pointer_to<expression> lhs, pointer_to<expression> rhs) : n_ary(op, lhs, rhs) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct equality : public n_ary {
+		equality(token op, pointer_to<expression> lhs, pointer_to<expression> rhs) : n_ary(op, lhs, rhs) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct relational : public n_ary {
+		relational(token op, pointer_to<expression> lhs, pointer_to<expression> rhs) : n_ary(op, lhs, rhs) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct cast : public expression {
+		::token closing_paren;
+		pointer_to<expression> type; // is this an expression?
+		pointer_to<expression> expr;
+		cast(::token closing_paren, pointer_to<expression> type, pointer_to<expression> expr) : closing_paren(closing_paren), type(type), expr(expr) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct unary : public expression {
+		::token op;
+		pointer_to<expression> sub;
+		unary(::token op, pointer_to<expression> sub) : op(op), sub(sub) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct prefix : public unary {
+		prefix(::token op, pointer_to<expression> sub) : unary(op, sub) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct postfix : public unary {
+		postfix(::token op, pointer_to<expression> sub) : unary(op, sub) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct call : public expression {
+		::token opening_paren;
+		pointer_to<expression> callee;
+		vector<pointer_to<expression>> arguments;
+		call(::token opening_paren, pointer_to<expression> callee) : opening_paren(opening_paren), callee(callee) {}
+		void add(pointer_to<expression> arg) {
+			arguments.push_back(arg);
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct subscript : public expression {
+		::token opening_bracket;
+		pointer_to<expression> array, index;
+		subscript(::token opening_bracket, pointer_to<expression> array, pointer_to<expression> subscript) : opening_bracket(opening_bracket), array(array), index(index) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct member_access : public expression {
+		::token accessor;
+		pointer_to<expression> outer, inner;
+		member_access(::token accessor, pointer_to<expression> outer, pointer_to<expression> inner) : accessor(accessor), outer(outer), inner(inner) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	
 	struct literal : public expression {
 		::token token;
 		literal(::token token) : token(token) {}

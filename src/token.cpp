@@ -20,6 +20,7 @@ std::string token::type_name(enum token::type t) {
 	case colon:              return ":";
 	case question:           return "?";
 	case exclamation:        return "!";
+	case tilde:              return "~";
 	case equals:             return "=";
 	case star_equals:        return "*=";
 	case slash_equals:       return "/=";
@@ -31,6 +32,24 @@ std::string token::type_name(enum token::type t) {
 	case amp_equals:         return "&=";
 	case hat_equals:         return "^=";
 	case pipe_equals:        return "|=";
+	case pipe_pipe:          return "||";
+	case amp_amp:            return "&&";
+	case ampersand:          return "&";
+	case pipe:               return "|";
+	case hat:                return "^";
+	case left:               return "<";
+	case right:              return ">";
+	case left_left:          return "<<";
+	case right_right:        return ">>";
+	case left_equal:         return "<=";
+	case right_equal:        return ">=";
+	case equal_equal:        return "==";
+	case exclamation_equal:  return "!=";
+	case plus_plus:          return "++";
+	case minus_minus:        return "--";
+	case size_of:            return "sizeof";
+	case dot:                return ".";
+	case arrow:              return "->";
 	default: return "UNKNOWN_TOKEN_TYPE";
 	}
 }
