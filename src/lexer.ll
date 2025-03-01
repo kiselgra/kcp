@@ -60,6 +60,9 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"}"  matched(brace_r);
 <INITIAL>","  matched(comma);
 <INITIAL>";"  matched(semicolon);
+<INITIAL>":"  matched(colon);
+<INITIAL>"?"  matched(question);
+<INITIAL>"!"  matched(exclamation);
 <INITIAL>"="  matched(equals);
 <INITIAL>"*="  matched(star_equals);
 <INITIAL>"/="  matched(slash_equals);

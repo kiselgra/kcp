@@ -17,6 +17,9 @@ std::string token::type_name(enum token::type t) {
 	case brace_r:            return "}";
 	case comma:              return ",";
 	case semicolon:          return ";";
+	case colon:              return ":";
+	case question:           return "?";
+	case exclamation:        return "!";
 	case equals:             return "=";
 	case star_equals:        return "*=";
 	case slash_equals:       return "/=";

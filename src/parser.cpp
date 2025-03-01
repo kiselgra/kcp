@@ -86,13 +86,26 @@ void parse(const vector<token> &tokens) {
 	rule(term) {
 		return parse_nary.template operator()<ast::arith>(factor, token::plus, token::minus);
 	};
-	rule(assignment) {
-		return parse_nary.template operator()<ast::assign>(term, 
+	std::function<pointer_to<ast::expression>()> conditional_exp;
+	rrule(conditional_exp) -> pointer_to<ast::expression> {
+		auto exp = term();
+		if (match(token::question)) {
+			token q = previous();
+			auto consequent = expression();
+			auto c = consume(token::colon, "Expect ':' following '?'-subexpression.");
+			auto alternative = conditional_exp();
+			auto cond = make_node<ast::conditional>(exp, q, consequent, c, alternative);
+			return cond;
+		}
+		return exp;
+	};
+	rule(assignment_exp) {
+		return parse_nary.template operator()<ast::assign>(conditional_exp, 
 														   token::equals, token::star_equals, token::slash_equals, token::percent_equals, token::plus_equals, token::minus_equals, 
 														   token::left_left_equals, token::right_right_equals, token::amp_equals, token::hat_equals, token::pipe_equals);
 	};
 	rrule(expression) {
-		return parse_nary.template operator()<ast::sequence>(assignment, token::comma);
+		return parse_nary.template operator()<sequence>(assignment_exp, token::comma);
 	};
 
 	auto x = expression();

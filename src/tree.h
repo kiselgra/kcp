@@ -23,6 +23,7 @@ namespace ast {
 	};
 
 	struct expression;
+	struct conditional;
 	struct n_ary;
 	struct sequence;
 	struct arith;
@@ -31,12 +32,14 @@ namespace ast {
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
-		virtual void visit(expression *node) {}
-		virtual void visit(n_ary      *node) { forward(expression); }
-		virtual void visit(sequence   *node) { forward(n_ary); }
-		virtual void visit(arith      *node) { forward(n_ary); }
-		virtual void visit(literal    *node) { forward(expression); }
-		virtual void visit(number     *node) { forward(literal); }
+		virtual void visit(expression  *node) {}
+		virtual void visit(conditional *node) { forward(expression); }
+		virtual void visit(n_ary       *node) { forward(expression); }
+		virtual void visit(sequence    *node) { forward(n_ary); }
+		virtual void visit(arith       *node) { forward(n_ary); }
+		virtual void visit(literal     *node) { forward(expression); }
+		virtual void visit(number      *node) { forward(literal); }
+		#undef forward
 	};
 
 
@@ -44,6 +47,14 @@ namespace ast {
 		virtual void traverse_with(visitor *) = 0;
 	};
 
+	struct conditional : public expression {
+		token qmark, colon;
+		pointer_to<expression> condition, consequent, alternative;
+		conditional(pointer_to<expression> condition, token qmark, pointer_to<expression> consequent, token colon, pointer_to<expression> alternative)
+		: qmark(qmark), colon(colon), condition(condition), consequent(consequent), alternative(alternative) {
+		}
+		virtual void traverse_with(visitor *v) override { v->visit(this); }
+	};
 
 	struct n_ary : public expression {
 		vector<token> infix_ops;
@@ -95,11 +106,21 @@ namespace ast {
 
 	struct printer : public visitor {
 		std::ostream &out;
-		int indent = 0;
+		int indent_size = 0;
 		printer(std::ostream &out) : out(out) {}
 		
-		std::string ind() { return "\n"+std::string(indent, ' '); }
+		std::string ind() { return "\n"+std::string(indent_size, ' '); }
+		struct indent_block {
+			printer *p;
+			indent_block(printer *p) : p(p) { 
+				p->indent_size += 2;
+			}
+			~indent_block() {
+				p->indent_size -= 2;
+			}
+		};
 
+		void visit(conditional *node) override;
 		void visit(n_ary *node) override;
 // 		void visit(n_ary *node) override {
 // 			int prev_ind = indent;
