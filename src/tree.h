@@ -37,8 +37,11 @@ namespace ast {
 	struct call;
 	struct subscript;
 	struct member_access;
+	struct identifier;
 	struct literal;
 	struct number_lit;
+	struct integral_lit;
+	struct float_lit;
 	struct character_lit;
 	struct string_lit;
 
@@ -59,8 +62,11 @@ namespace ast {
 		virtual void visit(call          *node) { forward(expression); }
 		virtual void visit(subscript     *node) { forward(expression); }
 		virtual void visit(member_access *node) { forward(expression); }
+		virtual void visit(identifier    *node) { forward(expression); }
 		virtual void visit(literal       *node) { forward(expression); }
 		virtual void visit(number_lit    *node) { forward(literal); }
+		virtual void visit(integral_lit  *node) { forward(number_lit); }
+		virtual void visit(float_lit     *node) { forward(number_lit); }
 		virtual void visit(character_lit *node) { forward(literal); }
 		virtual void visit(string_lit    *node) { forward(literal); }
 		#undef forward
@@ -123,7 +129,7 @@ namespace ast {
 	struct equality : public n_ary {
 		equality(token op, pointer_to<expression> lhs, pointer_to<expression> rhs) : n_ary(op, lhs, rhs) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
-	};
+};
 
 	struct relational : public n_ary {
 		relational(token op, pointer_to<expression> lhs, pointer_to<expression> rhs) : n_ary(op, lhs, rhs) {}
@@ -180,6 +186,11 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
+	struct identifier : public expression {
+		::token token;
+		identifier(::token token) : token(token) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
 	
 	struct literal : public expression {
 		::token token;
@@ -188,6 +199,16 @@ namespace ast {
 
 	struct number_lit : public literal {
 		number_lit(::token t) : literal(t) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct integral_lit : public number_lit {
+		integral_lit(::token t) : number_lit(t) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct float_lit : public number_lit {
+		float_lit(::token t) : number_lit(t) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -227,23 +248,12 @@ namespace ast {
 
 		void visit(conditional *node) override;
 		void visit(n_ary *node) override;
-// 		void visit(n_ary *node) override {
-// 			int prev_ind = indent;
-// 			if (std::reduce(
-// 			out << ind() << 
-// // 			out << ind() << "(" << node->op.text;
-// // 			indent += 2 + node->op.text.length();
-// // 			if (node->lhs->is<literal>())
-// // 				out << " ";
-// // 			node->lhs->traverse_with(this);
-// // 			if (node->lhs->is<literal>() && node->rhs->is<literal>())
-// // 				out << " ";
-// // 			else if (node->rhs->is<literal>())
-// // 				out << ind();
-// // 			node->rhs->traverse_with(this);
-// // 			out << ")";
-// 			indent = prev_ind;
-// 		}
+		void visit(cast *node) override;
+		void visit(unary *node) override;
+		void visit(call *node) override;
+		void visit(subscript *node) override;
+		void visit(member_access *node) override;
+		void visit(identifier *n) override;
 		void visit(literal *n) override;
 
 	};

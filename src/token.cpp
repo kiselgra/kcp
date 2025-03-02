@@ -1,10 +1,14 @@
 #include "token.h"
 
-std::string token::type_name(enum token::type t) {
+std::string token::type_string(enum token::type t) {
 	switch (t) {
 	case eof:                return "EOF";
 	case identifier:         return "ID";
-	case number:             return "NUM";
+	case type_name:          return "TYPENAME";
+	case integral:           return "INT";
+	case floating:           return "FLOAT";
+	case character:          return "CHAR";
+	case string:             return "STRING";
 	case star:               return "*";
 	case slash:              return "/";
 	case plus:               return "+";
@@ -50,8 +54,6 @@ std::string token::type_name(enum token::type t) {
 	case size_of:            return "sizeof";
 	case dot:                return ".";
 	case arrow:              return "->";
-	case character:          return "CHAR";
-	case string:             return "STRING";
 	default: return "UNKNOWN_TOKEN_TYPE";
 	}
 }

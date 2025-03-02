@@ -39,6 +39,47 @@ namespace ast {
 		}
 		out << ")";
 	}
+	
+	void printer::visit(cast *node) {
+		header("cast");
+		node->type->traverse_with(this);
+		node->expr->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(unary *node) {
+		header("unary");
+		out << " " << node->op.text;
+		node->sub->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(call *node) {
+		header("call");
+		node->callee->traverse_with(this);
+		for (auto arg : node->arguments)
+			arg->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(subscript *node) {
+		header("subscript");
+		node->array->traverse_with(this);
+		node->index->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(member_access *node) {
+		header("member-access");
+		node->outer->traverse_with(this);
+		node->inner->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(identifier *n) {
+		out << ind() << n->token.text;
+	}
+
 	void printer::visit(literal *n) {
 		out << ind() << n->token.text;
 	}

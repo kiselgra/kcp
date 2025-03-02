@@ -49,6 +49,10 @@ ALNUM ({DIGIT}|{ALPHA})
 <<EOF>>										matched(eof);
 <INITIAL>{WHITE_SPACE}						/*ignore*/
 
+<INITIAL>"-"?{DIGIT}+"."{DIGIT}*("e""-"?{DIGIT}+)?			matched(floating);
+<INITIAL>"-"?{DIGIT}*"."{DIGIT}+("e""-"?{DIGIT}+)?			matched(floating);
+<INITIAL>{DIGIT}+    matched(integral);
+
 <INITIAL>"//"								BEGIN(LINE_COMMENT);
 <INITIAL>"/*"								BEGIN(COMMENT);
 
@@ -100,8 +104,6 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"."  matched(dot);
 
 <INITIAL>"sizeof" matched(size_of);
-
-<INITIAL>"-"?{DIGIT}+("."{DIGIT}*("e""-"?{DIGIT}+)?)?			{	OUT("number: " << yytext);		matched(number);	}
 
 <INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng);
 <INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng);

@@ -2,12 +2,15 @@
 
 #include <string>
 #include <vector>
+#include <ostream>
 
 struct token {
 	enum type {
 		eof,
 		identifier,
-		number,
+		type_name,
+		integral,
+		floating,
 		character,
 		string,
 		// operators
@@ -39,7 +42,12 @@ struct token {
 	bool operator==(enum type t) const { return type == t; }
 	bool operator!=(enum type t) const { return type != t; }
 
-	static std::string type_name(enum type t);
+	static std::string type_string(enum type t);
+
+	friend std::ostream& operator<<(std::ostream &out, const token &t) {
+		out << "token['" << t.text << "' " << type_string(t.type) << " " << t.line << ":" << t.pos << "]";
+		return out;
+	}
 };
 
 

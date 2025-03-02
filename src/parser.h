@@ -12,7 +12,7 @@ struct parse_error : public std::runtime_error {
 	std::string full;
 	parse_error(token at, const std::string &message) : runtime_error(message), at(at) {
 		std::ostringstream oss;
-		oss << "Parse Error:" << message << " @" << at.line << ":" << at.pos;
+		oss << "Parse Error: " << message << " @" << at.line << ":" << at.pos << ", got token '" << at << "'";
 		full = oss.str();
 	}
 	const char* what() const noexcept override {	// order noexcept/override matters to gcc 14.2.1

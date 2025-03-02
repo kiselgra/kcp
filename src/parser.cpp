@@ -52,21 +52,33 @@ void parse(const vector<token> &tokens) {
 			}
 		return false;
 	};
+	helper(peek1) -> const token& {
+		if (current < tokens.size())
+			return tokens[current];
+		return tokens[current]; // will be eof
+	};
+	helper(check1, enum token::type t) {
+		return peek1() == t;
+	};
 	
 	std::function<pointer_to<ast::expression>()> expression;
 	std::function<pointer_to<ast::expression>()> cast_exp;
 	std::function<pointer_to<ast::expression>()> assignment_exp;
 
 	rule(type_name) {
-		return make_node<number_lit>(token(token::number, "NOT-IMPLEMENTED", -1, -1));
+		return make_node<number_lit>(token(token::integral, "NOT-IMPLEMENTED", -1, -1));
 	};
 	rule(identifier) {
-		return make_node<number_lit>(token(token::number, "NOT-IMPLEMENTED", -1, -1));
+		return make_node<number_lit>(token(token::integral, "NOT-IMPLEMENTED", -1, -1));
 	};
 
 	rule(primary_exp) -> pointer_to<ast::expression> {
-		if (match(token::number))
-			return make_node<ast::number_lit>(previous());
+		if (match(token::identifier))
+			return make_node<ast::identifier>(previous());
+		else if (match(token::integral))
+			return make_node<ast::integral_lit>(previous());
+		else if (match(token::floating))
+			return make_node<ast::float_lit>(previous());
 		else if (match(token::character))
 			return make_node<ast::character_lit>(previous());
 		else if (match(token::string))
@@ -76,7 +88,6 @@ void parse(const vector<token> &tokens) {
 			consume(token::paren_r, "Expect ')' after expression.");
 			return exp;
 		}
-		// TODO
 		else
 			throw parse_error(peek(), "Expect expression.");
  	};
@@ -85,10 +96,11 @@ void parse(const vector<token> &tokens) {
 		if (match(token::paren_l)) {
 			auto opening = previous();
 			auto call = make_node<ast::call>(opening, exp);
-			while (match(token::comma)) {
-				auto next_arg = assignment_exp();
-				call->add(next_arg);
-			}
+			if (!check(token::paren_r))
+				do {
+					auto next_arg = assignment_exp();
+					call->add(next_arg);
+				} while (match(token::comma));
 			consume(token::paren_r, "Expect ')' at end of call.");
 			return call;
 		}
@@ -107,7 +119,7 @@ void parse(const vector<token> &tokens) {
 			auto op = previous();
 			return make_node<postfix>(op, exp);
 		}
-		return primary_exp();
+		return exp;
 	};
 	rrule(unary_exp, expression) {
 		if (match(token::plus_plus, token::minus_minus)) {
@@ -135,7 +147,8 @@ void parse(const vector<token> &tokens) {
 		return postfix_exp();
 	};
 	frule(cast_exp) -> pointer_to<ast::expression> {
-		if (match(token::paren_l)) {
+		if (check(token::paren_l) && check1(token::type_name)) {	// cannot be matched, yet
+			consume(token::paren_l, "Did check this already");
 			auto type = type_name();
 			auto closing = consume(token::paren_r, "Expect ')' after cast target type.");
 			auto subexp = cast_exp();

@@ -6,9 +6,9 @@
 using std::cout, std::endl;
 
 int main() {
-	auto tokens = lex_input("testfile");
+	auto tokens = lex_input("test/testfile2");
 	for (auto t : tokens) {
-		cout << " - " << token::type_name(t.type) << ": " << t.text << " @" << t.line << "." << t.pos << endl;
+		cout << " - " << token::type_string(t.type) << ": " << t.text << " @" << t.line << "." << t.pos << endl;
 	}
 	parse(tokens);
 	return 0;
