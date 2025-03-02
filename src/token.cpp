@@ -4,7 +4,7 @@ std::string token::type_string(enum token::type t) {
 	switch (t) {
 	case eof:                return "EOF";
 	case identifier:         return "ID";
-	case type_name:          return "TYPENAME";
+	// case type_name:          return "TYPENAME";
 	case integral:           return "INT";
 	case floating:           return "FLOAT";
 	case character:          return "CHAR";

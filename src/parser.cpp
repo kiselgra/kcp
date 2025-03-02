@@ -66,10 +66,12 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::expression>()> assignment_exp;
 
 	rule(type_name) {
-		return make_node<number_lit>(token(token::integral, "NOT-IMPLEMENTED", -1, -1));
+		auto tok = consume(token::identifier, "Expect identifier (for type name).");
+		return make_node<ast::identifier>(tok);
 	};
 	rule(identifier) {
-		return make_node<number_lit>(token(token::integral, "NOT-IMPLEMENTED", -1, -1));
+		auto tok = consume(token::identifier, "Expect identifier.");
+		return make_node<ast::identifier>(tok);
 	};
 
 	rule(primary_exp) -> pointer_to<ast::expression> {
@@ -147,12 +149,30 @@ void parse(const vector<token> &tokens) {
 		return postfix_exp();
 	};
 	frule(cast_exp) -> pointer_to<ast::expression> {
-		if (check(token::paren_l) && check1(token::type_name)) {	// cannot be matched, yet
+// 		if (check(token::paren_l) && check1(token::type_name)) {	// cannot be matched, yet
+// 			consume(token::paren_l, "Did check this already");
+// 			auto type = type_name();
+// 			auto closing = consume(token::paren_r, "Expect ')' after cast target type.");
+// 			auto subexp = cast_exp();
+// 			return make_node<cast>(closing, type, subexp);
+// 		}
+// 		return unary_exp();
+		if (check(token::paren_l)) {
+			int restart = current;   // error recovery point
 			consume(token::paren_l, "Did check this already");
-			auto type = type_name();
-			auto closing = consume(token::paren_r, "Expect ')' after cast target type.");
-			auto subexp = cast_exp();
-			return make_node<cast>(closing, type, subexp);
+			auto type = type_name(); // this checks for ID, not TYPENAME, so will succeed
+			if (check(token::paren_r)) {
+				auto closing = consume(token::paren_r, "Expect ')' after cast target type.");
+				auto subexp = cast_exp();
+				return make_node<cast>(closing, type, subexp);
+			}
+			else try {
+				current = restart;
+				return unary_exp();
+			}
+			catch (parse_error e) {
+				throw parse_error(e.at, std::string(e.what()) + "\nOr missing ')' after cast target type.");
+			}
 		}
 		return unary_exp();
 	};
