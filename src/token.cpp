@@ -50,6 +50,8 @@ std::string token::type_name(enum token::type t) {
 	case size_of:            return "sizeof";
 	case dot:                return ".";
 	case arrow:              return "->";
+	case character:          return "CHAR";
+	case string:             return "STRING";
 	default: return "UNKNOWN_TOKEN_TYPE";
 	}
 }

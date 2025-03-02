@@ -58,15 +58,19 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::expression>()> assignment_exp;
 
 	rule(type_name) {
-		return make_node<number>(token(token::number, "NOT-IMPLEMENTED", -1, -1));
+		return make_node<number_lit>(token(token::number, "NOT-IMPLEMENTED", -1, -1));
 	};
 	rule(identifier) {
-		return make_node<number>(token(token::number, "NOT-IMPLEMENTED", -1, -1));
+		return make_node<number_lit>(token(token::number, "NOT-IMPLEMENTED", -1, -1));
 	};
 
 	rule(primary_exp) -> pointer_to<ast::expression> {
 		if (match(token::number))
-			return make_node<ast::number>(previous());
+			return make_node<ast::number_lit>(previous());
+		else if (match(token::character))
+			return make_node<ast::character_lit>(previous());
+		else if (match(token::string))
+			return make_node<ast::string_lit>(previous());
 		else if (match(token::paren_l)) {
 			auto exp = expression();
 			consume(token::paren_r, "Expect ')' after expression.");

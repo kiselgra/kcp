@@ -8,6 +8,8 @@ struct token {
 		eof,
 		identifier,
 		number,
+		character,
+		string,
 		// operators
 		star, slash, plus, minus, pipe_pipe, amp_amp, pipe, ampersand, hat, equal_equal, exclamation_equal, left_equal, right_equal, 
 		left, right, left_left, right_right, plus_plus, minus_minus, tilde, arrow,
@@ -25,7 +27,13 @@ struct token {
 	enum type type;
 	std::string text;
 
-	token(enum type t, const char *str, int line, int col) : type(t), text(str), line(line), pos(col) {
+	token(enum type t, const std::string &str, int line, int col) : type(t), text(str), line(line), pos(col) {
+	}
+	static token make_char(const std::string &str, int line, int col) {
+		return token(character, str.substr(1, str.length()-2), line, col);
+	}
+	static token make_string(const std::string &str, int line, int col) {
+		return token(string, str, line, col);
 	}
 
 	bool operator==(enum type t) const { return type == t; }

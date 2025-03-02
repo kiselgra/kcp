@@ -39,7 +39,7 @@ namespace ast {
 		}
 		out << ")";
 	}
-	void printer::visit(number *n) {
+	void printer::visit(literal *n) {
 		out << ind() << n->token.text;
 	}
 

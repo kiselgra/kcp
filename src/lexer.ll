@@ -26,6 +26,9 @@ static int last_line = 0;
 
 #define matched(X) return token(token::X, yytext, yylineno, col-yyleng)
 
+std::string string_accum = "";
+int string_accum_start = 0;
+
 %}
 
 %option noyywrap
@@ -38,6 +41,7 @@ ALNUM ({DIGIT}|{ALPHA})
 
 %s COMMENT
 %s LINE_COMMENT
+%s STRING
 
 
 %%
@@ -99,6 +103,11 @@ ALNUM ({DIGIT}|{ALPHA})
 
 <INITIAL>"-"?{DIGIT}+("."{DIGIT}*("e""-"?{DIGIT}+)?)?			{	OUT("number: " << yytext);		matched(number);	}
 
+<INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng);
+<INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng);
+
+<INITIAL>\" { string_accum = ""; string_accum_start = col; BEGIN(STRING); }
+
 <INITIAL>{ALPHA}{ALNUM}*        matched(identifier);
 
 <INITIAL>.									{ 	OUT("char: " << (int)yytext[0] << "[" << yytext[0] << "]"); }
@@ -109,8 +118,10 @@ ALNUM ({DIGIT}|{ALPHA})
 <COMMENT>"*/"       BEGIN(INITIAL);
 <COMMENT>.*         OUT("comment: " << yytext);
 
-
-
+<STRING>\\\" string_accum += yytext;
+<STRING>\" { BEGIN(INITIAL); return token::make_string(yytext, yylineno, string_accum_start); }
+<STRING>[^\n"\\] string_accum += yytext;
+<STRING>\n std::cerr << "Lexer error on line " << yylineno << ": strings may not contain newlines." << std::endl;
 
 %%
 

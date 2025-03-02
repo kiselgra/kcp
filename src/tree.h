@@ -38,7 +38,9 @@ namespace ast {
 	struct subscript;
 	struct member_access;
 	struct literal;
-	struct number;
+	struct number_lit;
+	struct character_lit;
+	struct string_lit;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -58,7 +60,9 @@ namespace ast {
 		virtual void visit(subscript     *node) { forward(expression); }
 		virtual void visit(member_access *node) { forward(expression); }
 		virtual void visit(literal       *node) { forward(expression); }
-		virtual void visit(number        *node) { forward(literal); }
+		virtual void visit(number_lit    *node) { forward(literal); }
+		virtual void visit(character_lit *node) { forward(literal); }
+		virtual void visit(string_lit    *node) { forward(literal); }
 		#undef forward
 	};
 
@@ -182,8 +186,18 @@ namespace ast {
 		literal(::token token) : token(token) {}
 	};
 
-	struct number : public literal {
-		number(::token t) : literal(t) {}
+	struct number_lit : public literal {
+		number_lit(::token t) : literal(t) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct character_lit : public literal {
+		character_lit(::token t) : literal(t) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct string_lit : public literal {
+		string_lit(::token t) : literal(t) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -230,7 +244,7 @@ namespace ast {
 // // 			out << ")";
 // 			indent = prev_ind;
 // 		}
-		void visit(number *n) override;
+		void visit(literal *n) override;
 
 	};
 }
