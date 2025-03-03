@@ -16,12 +16,7 @@ namespace ast {
 	}
 
 
-	struct node {
-// 		std::string 
-		template<typename T> bool is() { return dynamic_cast<T*>(this) != nullptr; }
-		virtual ~node() {}
-	};
-
+	struct node;
 	struct expression;
 	struct conditional;
 	struct n_ary;
@@ -44,6 +39,15 @@ namespace ast {
 	struct float_lit;
 	struct character_lit;
 	struct string_lit;
+	
+	struct translation_unit;
+	struct type_specifier;
+	struct type_name;
+	struct type_modifier;
+	struct type_qualifier;
+	struct declaration_specifiers;
+	struct declarator;
+	struct declaration;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -69,12 +73,29 @@ namespace ast {
 		virtual void visit(float_lit     *node) { forward(number_lit); }
 		virtual void visit(character_lit *node) { forward(literal); }
 		virtual void visit(string_lit    *node) { forward(literal); }
+		
+		virtual void visit(translation_unit       *node) {}
+		virtual void visit(type_specifier         *node) {}
+		virtual void visit(type_name              *node) { forward(type_specifier); }
+		virtual void visit(type_modifier          *node) { forward(type_specifier); }
+		virtual void visit(type_qualifier         *node) { forward(type_specifier); }
+		virtual void visit(declaration_specifiers *node) {}
+		virtual void visit(declarator             *node) {}
+		virtual void visit(declaration            *node) {}
 		#undef forward
+	};
+
+	struct node {
+// 		std::string 
+		template<typename T> bool is() { return dynamic_cast<T*>(this) != nullptr; }
+		virtual ~node() {}
+		
+		virtual void traverse_with(visitor *) = 0;
 	};
 
 
 	struct expression : public node {
-		virtual void traverse_with(visitor *) = 0;
+// 		virtual void traverse_with(visitor *) = 0; ??
 	};
 
 	struct conditional : public expression {
@@ -224,6 +245,91 @@ namespace ast {
 
 
 
+// 	struct statement; // move up
+
+	struct translation_unit : public node {
+		vector<pointer_to<node>> toplevel; // XXX 
+		void add(pointer_to<node> stmt) {  // XXX use statement node type
+			toplevel.push_back(stmt);
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+// 	struct statement : public node {
+// 		void traverse_with(visitor *v) override { v->visit(this); }
+// 	};
+// 
+// 	struct function_definition : public statement {
+// 		void traverse_with(visitor *v) override { v->visit(this); }
+// 	};
+
+	struct type_specifier : public node {
+		::token name;
+		type_specifier(::token name) : name(name) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	// void, int, float, double
+	struct type_name : public type_specifier {
+		type_name(::token name) : type_specifier(name) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	// unsigned, signed, short, long
+	struct type_modifier : public type_specifier {
+		type_modifier(::token name) : type_specifier(name) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	// const volatile
+	struct type_qualifier : public type_specifier {
+		type_qualifier(::token name) : type_specifier(name) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct declaration_specifiers : public node {
+		vector<pointer_to<type_specifier>> specifiers;
+		declaration_specifiers() = default;
+		// this is only set if the last token actually was an ID
+		pointer_to<type_name> last_id = nullptr;
+		void add(pointer_to<type_specifier> spec) {
+			specifiers.push_back(spec);
+			last_id = nullptr;
+		}
+		void add(pointer_to<type_name> spec) {
+			if (spec->name.type == token::identifier)
+				last_id = spec;
+			else
+				last_id = nullptr;
+			specifiers.push_back(spec);
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct declarator : public node {
+		struct pointer_qualifier {
+			bool c, v;
+		};
+		vector<pointer_qualifier> pointer;
+		pointer_to<identifier> name;
+		void add_pointer(bool c, bool v) {
+			pointer.push_back({c, v});
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct declaration : public node {
+		pointer_to<declaration_specifiers> specifiers;
+		pointer_to<ast::declarator> declarator;
+		pointer_to<expression> initializer;
+		declaration(pointer_to<declaration_specifiers> specifiers,
+					pointer_to<ast::declarator> declarator,
+					pointer_to<expression> initializer)
+			: specifiers(specifiers), declarator(declarator), initializer(initializer) {
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 	template<typename T, typename... Args> pointer_to<T> make_node(Args... args) {
 		return new T(std::forward<Args>(args)...);
 	}
@@ -255,6 +361,11 @@ namespace ast {
 		void visit(member_access *node) override;
 		void visit(identifier *n) override;
 		void visit(literal *n) override;
+		
+		void visit(translation_unit *n) override;
+		void visit(declaration_specifiers *n) override;
+		void visit(declarator *n) override;
+		void visit(declaration *n) override;
 
 	};
 }

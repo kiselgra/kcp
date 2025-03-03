@@ -10,8 +10,10 @@ using namespace ast;
 
 #define helper(X,...) auto X = [&](__VA_ARGS__)
 #define rule(X) auto X = [&]()
+#define prule(X,P) auto X = [&](P)
 #define frule(X) X = [&]()
 #define rrule(X,Y) std::function<pointer_to<ast::Y>()> X = [&]() -> pointer_to<ast::Y>
+#define prrule(X,P,Y) std::function<pointer_to<ast::Y>(P)> X = [&](P) -> pointer_to<ast::Y>
 
 struct parser {
 
@@ -73,6 +75,11 @@ void parse(const vector<token> &tokens) {
 		auto tok = consume(token::identifier, "Expect identifier.");
 		return make_node<ast::identifier>(tok);
 	};
+
+	/* 
+	 * Expressions.
+	 *
+	 */
 
 	rule(primary_exp) -> pointer_to<ast::expression> {
 		if (match(token::identifier))
@@ -241,10 +248,168 @@ void parse(const vector<token> &tokens) {
 	frule(expression) {
 		return parse_nary.template operator()<sequence>(assignment_exp, token::comma);
 	};
+	
+	
+	/* 
+	 * Statements.
+	 *
+	 */
 
-	auto x = expression();
+	rule(declaration_specifiers) {
+		// parse all possible specifiers into one node
+		auto all = make_node<ast::declaration_specifiers>();
+		while (true) {
+			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double))
+				all->add(make_node<ast::type_name>(previous()));
+			else if (match(token::identifier))	// here we add any ID as a type name, see declaration_specifiers::add(type_name*)
+				all->add(make_node<ast::type_name>(previous()));
+			else if (match(token::kw_unsigned, token::kw_signed, token::kw_long, token::kw_short))
+				all->add(make_node<ast::type_modifier>(previous()));
+			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern))
+				all->add(make_node<ast::type_qualifier>(previous()));
+			else if (match(token::kw_struct, token::kw_union)) {
+			}
+			else if (match(token::kw_enum)) {
+			}
+			else break;
+			cout << "consumed " << previous() << endl;
+		}
+		return all;
+	};
+
+	
+	prrule(declarator, pointer_to<ast::declaration_specifiers> spec, declarator) {
+		auto decl = make_node<ast::declarator>();
+		while (match(token::star)) {
+			bool c = false, v = false;
+			if (match(token::kw_const))    c = true;
+			if (match(token::kw_volatile)) v = true;
+			decl->add_pointer(c, v);
+		}
+		if (match(token::identifier)) {
+			decl->name = make_node<ast::identifier>(previous());
+		}
+		else if (match(token::paren_l)) {
+			auto nested = declarator(nullptr);
+			consume(token::paren_r, "Expect ')' after nested declarator.");
+		}
+		else { // we don't have a name but need one, maybe it was parsed as part of the decl-spec?
+			if (spec && spec->last_id) {
+				decl->name = make_node<ast::identifier>(spec->last_id->name);
+				// XXX delete spec->last_id
+				spec->last_id = nullptr;
+				spec->specifiers.pop_back();
+			}
+			else
+				throw parse_error(peek(), "Expect name for declarator.");
+		}
+		return decl;
+	};
+
+	rule(external_declaration) {
+		// declaration and function-definition share this part
+		auto spec = declaration_specifiers();
+		auto decl = declarator(spec);
+		if (match(token::brace_l)) {
+			// we have a function definition
+		}
+		// we have a declaration
+		pointer_to<ast::expression> init = nullptr;
+		if (match(token::equals)) {
+			init = assignment_exp(); // TODO other cases
+		}
+		if (!match(token::semicolon))
+			throw parse_error(peek(), "Expect ';' at end of declaration");
+		return make_node<ast::declaration>(spec, decl, init);
+	};
+	
+	rule(translation_unit) {
+		auto root = make_node<ast::translation_unit>();
+		while (!at_end()) {
+			root->add(external_declaration());
+			cout << "next " << peek() << endl;
+		}
+		return root;
+	};
+
+
+	auto x = translation_unit();
 	ast::printer p(std::cout);
 	x->traverse_with(&p);
 }
+
+/*
+	Excerpt of C grammar to parse declarations.
+	How to figure if an identifier is part of the type or the declared name?
+   
+		external-declaration:
+			function-definition
+			declaration
+
+	First branch
+
+		declaration:
+			declaration-specifiers init-declarator* ;
+		
+		declaration-specifiers:
+			storage-class-specifier declaration-specifiers?
+			type-specifier declaration-specifiers?
+			type-qualifier declaration-specifiers?
+
+		storage-class-specifier:
+			auto | ... | typedef
+		
+		type-specifier:
+			void | ... | unsigned | struct-or-union-specifier | enum-specifier | typedef-name
+
+		typedef-name:
+			identifier       // !!
+
+		type-qualifier:
+			const | volatile
+
+		struct-or-union-spec:
+			s-o-u identifier? { struct-declaration-list }
+			s-o-u identifier
+
+		s-o-u:
+			struct | union
+
+		enum-specifier:
+			enum identifier? { enumerator-list }
+			enum identifier
+
+		init-declarator:
+			declarator
+			declarator = ...
+
+		declarator:
+			pointer? direct-declarator
+
+		direct-declarator:
+			identifier
+			( identifier ... )
+			identifier [ ... ]
+			identifier ( ... )
+
+	Second branch:
+
+		function-definition:
+			declaration-specifiers? declarator declaration-list compound-statement
+
+
+	Declarations boil down to:
+
+		declaration:
+			s-o-u [...]
+			enum [...]
+			void | ... | unsigned | auto | ... | typedef | const | volatile | typedef-name[aka identifier]
+
+	Suggest this approach:
+	Eat up all decl-specs and hand in list-node to declarator-parser to take out the ID if necessary.
+	
+
+ */
+
 
 // vim: filetype=cpp-parse

@@ -76,12 +76,46 @@ namespace ast {
 		out << ")";
 	}
 
-	void printer::visit(identifier *n) {
-		out << ind() << n->token.text;
+	void printer::visit(identifier *node) {
+		out << ind() << node->token.text;
 	}
 
-	void printer::visit(literal *n) {
-		out << ind() << n->token.text;
+
+	void printer::visit(translation_unit *node) {
+		for (auto x : node->toplevel)
+			x->traverse_with(this);
+	}
+	
+	void printer::visit(declaration_specifiers *node) {
+		out << ind() << "(decl-spec";
+		for (auto x : node->specifiers)
+			out << " " << x->name.text;
+		if (node->last_id)
+			out << " | last-id";
+		out << ")";
+	}
+	
+	void printer::visit(declarator *node) {
+		header("declarator");
+		for (auto p : node->pointer) {
+			out << " *";
+			if (p.c) out << " const";
+			if (p.v) out << " volatile";
+		}
+		node->name->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(declaration *node) {
+		header("declaration");
+		if (node->specifiers)  node->specifiers->traverse_with(this);
+		if (node->declarator)  node->declarator->traverse_with(this);
+		if (node->initializer) node->initializer->traverse_with(this);
+		out << ")";	
+	}
+
+	void printer::visit(literal *node) {
+		out << ind() << node->token.text;
 	}
 
 }

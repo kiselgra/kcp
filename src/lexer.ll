@@ -104,6 +104,24 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"."  matched(dot);
 
 <INITIAL>"sizeof" matched(size_of);
+<INITIAL>"void" matched(kw_void);
+<INITIAL>"char" matched(kw_char);
+<INITIAL>"short" matched(kw_short);
+<INITIAL>"int" matched(kw_int);
+<INITIAL>"long" matched(kw_long);
+<INITIAL>"float" matched(kw_float);
+<INITIAL>"double" matched(kw_double);
+<INITIAL>"signed" matched(kw_signed);
+<INITIAL>"unsigned" matched(kw_unsigned);
+<INITIAL>"const" matched(kw_const);
+<INITIAL>"volatile" matched(kw_volatile);
+<INITIAL>"struct" matched(kw_struct);
+<INITIAL>"union" matched(kw_union);
+<INITIAL>"enum" matched(kw_enum);
+<INITIAL>"const" matched(kw_const);
+<INITIAL>"static" matched(kw_static);
+<INITIAL>"auto" matched(kw_auto);
+<INITIAL>"register" matched(kw_register);
 
 <INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng);
 <INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng);

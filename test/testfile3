@@ -1,0 +1,4 @@
+const unsigned int foo;
+int blub = 99;
+const *volatile *const blah = 0;
+// static foo bar();
