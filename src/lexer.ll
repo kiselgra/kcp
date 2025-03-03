@@ -118,7 +118,6 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"struct" matched(kw_struct);
 <INITIAL>"union" matched(kw_union);
 <INITIAL>"enum" matched(kw_enum);
-<INITIAL>"const" matched(kw_const);
 <INITIAL>"static" matched(kw_static);
 <INITIAL>"auto" matched(kw_auto);
 <INITIAL>"register" matched(kw_register);
@@ -156,9 +155,9 @@ std::vector<token> lex_input(const std::string &filename) {
 
   while (true) {
     token t = yylex();
+    tokens.push_back(t);
     if (t.type == token::eof)
       return tokens;
-    tokens.emplace_back(t);
   }
   return tokens;
 }
