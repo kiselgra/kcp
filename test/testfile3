@@ -1,4 +1,9 @@
-const unsigned int foo;
-int blub = 99;
-const *volatile *const blah = 0;
-// static foo bar();
+// const unsigned int foo;
+// int blub = 99;
+// const *volatile *const blah = 0;
+static foo bar();
+static foo bar(int foo, blub);
+
+const struct foo bar;
+
+struct { int x; float y, z; } foo;

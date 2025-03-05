@@ -14,6 +14,7 @@ using namespace ast;
 #define frule(X) X = [&]()
 #define rrule(X,Y) std::function<pointer_to<ast::Y>()> X = [&]() -> pointer_to<ast::Y>
 #define prrule(X,P,Y) std::function<pointer_to<ast::Y>(P)> X = [&](P) -> pointer_to<ast::Y>
+#define fprrule(X,P,Y) X = [&](P) -> pointer_to<ast::Y>
 
 struct parser {
 
@@ -44,6 +45,9 @@ void parse(const vector<token> &tokens) {
 	helper(consume, enum token::type type, const std::string &message) {
 		if (check(type)) return advance();
 		throw parse_error(peek(), message);
+	};
+	helper(rewind1) {
+		current--;
 	};
 	helper(match, auto... ts) {
 		using expand = enum token::type[];	// c++ is crazy...
@@ -254,80 +258,180 @@ void parse(const vector<token> &tokens) {
 	 * Statements.
 	 *
 	 */
+	std::function<pointer_to<ast::declaration>()> parameter_declaration;
+	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
+	std::function<pointer_to<ast::declarator>(bool)> declarator;
 
-	rule(declaration_specifiers) {
+	rule(struct_declaration) {
+		// a declaration inside of a struct
+		auto spec = declaration_specifiers();
+		auto declaration = make_node<ast::declaration>(spec);
+		while (!match(token::semicolon)) {
+			auto decl = declarator(false);
+			pointer_to<ast::expression> fieldwidth = nullptr;
+			if (match(token::colon))
+				fieldwidth = conditional_exp();
+			declaration->add_width_decl(decl, fieldwidth);
+			if (!check(token::semicolon))
+				consume(token::comma, "Expect ';' or ',' after struct declarator.");
+		}
+		return declaration;
+	};
+
+	prule(struct_or_union, token keyword) {
+		// we have parsed the keyword already
+		pointer_to<ast::identifier> name = nullptr;
+		if (match(token::identifier))
+			name = make_node<ast::identifier>(previous());
+		auto structure = make_node<struct_union>(keyword, name);
+		// if not named, declaration-list is not optional
+		if (!name)
+			consume(token::brace_l, "Expected '{' after anonymous struct or union.");
+		else if (!match(token::brace_l)) // consumes the brace if present
+			return structure;
+		// parse declaration list
+		while (!match(token::brace_r)) {
+			auto decl = struct_declaration();
+			structure->add(decl);
+		}
+		return structure;
+	};
+
+	frule(declaration_specifiers) {
 		// parse all possible specifiers into one node
 		auto all = make_node<ast::declaration_specifiers>();
+		bool last_id = false;
+		bool int_mod = false;
+		vector<token> identifiers;
 		while (true) {
-			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double))
-				all->add(make_node<ast::type_name>(previous()));
-			else if (match(token::identifier))	// here we add any ID as a type name, see declaration_specifiers::add(type_name*)
-				all->add(make_node<ast::type_name>(previous()));
-			else if (match(token::kw_unsigned, token::kw_signed, token::kw_long, token::kw_short))
+			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double)) {
+				last_id = false;
+				all->type = make_node<ast::type_name>(previous());
+			}
+			else if (match(token::identifier))	{
+				last_id = true;
+				identifiers.push_back(previous());
+			}
+			else if (match(token::kw_unsigned, token::kw_signed, token::kw_long, token::kw_short)) {
+				last_id = false;
+				int_mod = true;
 				all->add(make_node<ast::type_modifier>(previous()));
-			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern))
+			}
+			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern)) {
+				last_id = false;
 				all->add(make_node<ast::type_qualifier>(previous()));
+			}
 			else if (match(token::kw_struct, token::kw_union)) {
+				last_id = false;
+				all->type = struct_or_union(previous());
 			}
 			else if (match(token::kw_enum)) {
+				last_id = false;
+				// TODO
 			}
 			else break;
-			cout << "consumed " << previous() << endl;
 		}
+
+		// we might have parsed one indentifier too many, if so, push it back.
+		// to make this a little more safe, we first figure out what the typename was
+			
+		if (!all->type) { // if type is set already, then we have a struct,union,enum or one void,char,int,float,double
+			if (int_mod)  // if there is unsigned, etc -> implicity type is int
+				all->type = make_node<ast::type_name>(token(token::kw_int, "int", -1, -1));
+			else if (identifiers.size() > 0) { // if there are unmatched identifiers, the first one is the type. We follow c99 by disallowing implicit int
+				all->type = make_node<ast::type_name>(identifiers.front());
+				identifiers.erase(identifiers.begin());
+			}
+		}
+		// XXX this is a hack and might be problematic at some point...
+		if (last_id && identifiers.size() > 0) {
+			identifiers.pop_back();
+			rewind1();
+			assert(peek() == token::identifier);
+		}
+		if (identifiers.size() > 0) // XXX is this always the right thing to do?
+			throw parse_error(identifiers.front(), "Superflous identifiers in declaration specifiers.");
+
 		return all;
 	};
 
-	
-	prrule(declarator, pointer_to<ast::declaration_specifiers> spec, declarator) {
+	fprrule(declarator, bool allow_unnamed, declarator) {
 		auto decl = make_node<ast::declarator>();
+		// pointers
 		while (match(token::star)) {
 			bool c = false, v = false;
 			if (match(token::kw_const))    c = true;
 			if (match(token::kw_volatile)) v = true;
 			decl->add_pointer(c, v);
 		}
+		// name / nesting
 		if (match(token::identifier)) {
 			decl->name = make_node<ast::identifier>(previous());
 		}
 		else if (match(token::paren_l)) {
-			auto nested = declarator(nullptr);
+			auto nested = declarator(true); // XXX how to hook this in?
 			consume(token::paren_r, "Expect ')' after nested declarator.");
 		}
-		else { // we don't have a name but need one, maybe it was parsed as part of the decl-spec?
-			if (spec && spec->last_id) {
-				decl->name = make_node<ast::identifier>(spec->last_id->name);
-				// XXX delete spec->last_id
-				spec->last_id = nullptr;
-				spec->specifiers.pop_back();
+		else if (!allow_unnamed)
+			throw parse_error(peek(), "Expect name or nested declaration for declarator.");
+		// arrays and functions
+		if (match(token::bracket_l)) {
+			while (match(token::bracket_l)) {
+				pointer_to<ast::expression> const_expr = nullptr;
+				if (!check(token::bracket_r))
+					const_expr = conditional_exp();
+				decl->add_array(const_expr);
+				consume(token::bracket_r, "Expect ']' after array dimension.");
 			}
+			if (match(token::paren_l))
+				throw parse_error(previous(), "Array of functions not allowed.");
+		}
+		else if (match(token::paren_l)) {
+			if (!check(token::paren_r))
+				do decl->add_parameter(parameter_declaration());
+				while (match(token::comma));
 			else
-				throw parse_error(peek(), "Expect name for declarator.");
+				decl->add_parameter(nullptr); // meaning: function, but no specified params
+			consume(token::paren_r, "Expect ')' after function declaration");
 		}
 		return decl;
+	};
+	
+	// TODO test a function w/o params, test one with, add visitor for this
+	frule(parameter_declaration) {
+		auto spec = declaration_specifiers();
+		auto decl = declarator(true);
+		// this can also be w/o declarator or with "abstract-declarator" (TODO)
+		return make_node<ast::declaration>(spec, decl);
 	};
 
 	rule(external_declaration) {
 		// declaration and function-definition share this part
 		auto spec = declaration_specifiers();
-		auto decl = declarator(spec);
-		if (match(token::brace_l)) {
-			// we have a function definition
+		auto declaration = make_node<ast::declaration>(spec); // XXX do we "steal" the ID for the second declarator?
+		while (!match(token::semicolon)) {
+			auto decl = declarator(false);
+			if (match(token::brace_l)) {
+				// we have a function definition
+				// TODO
+			}
+			// we have a declaration
+			pointer_to<ast::expression> init = nullptr;
+			if (match(token::equals)) {
+				init = assignment_exp(); // TODO other cases
+			}
+			declaration->add_init_decl(decl, init);
+			if (!check(token::semicolon))
+				consume(token::comma, "Expect ';' or ',' after declarator.");
 		}
-		// we have a declaration
-		pointer_to<ast::expression> init = nullptr;
-		if (match(token::equals)) {
-			init = assignment_exp(); // TODO other cases
-		}
-		if (!match(token::semicolon))
-			throw parse_error(peek(), "Expect ';' at end of declaration");
-		return make_node<ast::declaration>(spec, decl, init);
+		return declaration;
 	};
 	
 	rule(translation_unit) {
 		auto root = make_node<ast::translation_unit>();
 		while (!at_end()) {
-			root->add(external_declaration());
 			cout << "next " << peek() << endl;
+			root->add(external_declaration());
 		}
 		return root;
 	};

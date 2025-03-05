@@ -3,6 +3,7 @@
 #include <numeric>
 #include <typeinfo>
 #include <string>
+#include <iostream>
 
 using std::string;
 
@@ -84,14 +85,15 @@ namespace ast {
 	void printer::visit(translation_unit *node) {
 		for (auto x : node->toplevel)
 			x->traverse_with(this);
+		out << "\n";
 	}
 	
 	void printer::visit(declaration_specifiers *node) {
 		out << ind() << "(decl-spec";
 		for (auto x : node->specifiers)
 			out << " " << x->name.text;
-		if (node->last_id)
-			out << " | last-id";
+		if (node->type)
+			node->type->traverse_with(this);
 		out << ")";
 	}
 	
@@ -102,20 +104,56 @@ namespace ast {
 			if (p.c) out << " const";
 			if (p.v) out << " volatile";
 		}
-		node->name->traverse_with(this);
+		if (node->name)
+			node->name->traverse_with(this);
+		if (node->array.size()) {
+			header("array");
+			for (auto x : node->array)
+				if (x)
+					x->traverse_with(this);
+				else
+					out << ind() << "null";
+			out << ")";
+		}
+		if (node->fn_params.size()) {
+			header("fn-parameters");
+			for (auto x : node->fn_params)
+				if (x)
+					x->traverse_with(this);
+				else
+					out << ind() << "null";
+			out << ")";
+		}
 		out << ")";
 	}
 
 	void printer::visit(declaration *node) {
 		header("declaration");
 		if (node->specifiers)  node->specifiers->traverse_with(this);
-		if (node->declarator)  node->declarator->traverse_with(this);
-		if (node->initializer) node->initializer->traverse_with(this);
+		for (auto [decl,init,width] : node->init_declarators) {
+			decl->traverse_with(this);
+			if (init)  init->traverse_with(this);
+			if (width) width->traverse_with(this);
+		}
 		out << ")";	
+	}
+	
+	void printer::visit(struct_union *node) {
+		header(node->kind.text);
+		if (node->name()) out << " " << node->name()->token.text;
+		for (auto x : node->declarations)
+			x->traverse_with(this);
 	}
 
 	void printer::visit(literal *node) {
 		out << ind() << node->token.text;
+	}
+	
+	
+	
+	void print(pointer_to<node> ast) {
+		printer p(std::cout);
+		ast->traverse_with(&p);
 	}
 
 }

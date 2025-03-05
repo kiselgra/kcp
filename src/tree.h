@@ -8,10 +8,11 @@
 
 namespace ast {
 	using std::vector;
+	using std::tuple;
 	
 	template<typename T> using pointer_to = T*;
 	template<typename T> T* unwrap(pointer_to<T> p) { return p; }
-	template<typename T> bool is(pointer_to<T> node) {
+	template<typename T, typename P> bool is(pointer_to<P> node) {
 		return dynamic_cast<T*>(unwrap(node)) != nullptr;
 	}
 
@@ -48,6 +49,7 @@ namespace ast {
 	struct declaration_specifiers;
 	struct declarator;
 	struct declaration;
+	struct struct_union;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -82,6 +84,7 @@ namespace ast {
 		virtual void visit(declaration_specifiers *node) {}
 		virtual void visit(declarator             *node) {}
 		virtual void visit(declaration            *node) {}
+		virtual void visit(struct_union           *node) { /*XXX*/ }
 		#undef forward
 	};
 
@@ -287,20 +290,33 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
+	struct struct_union : public node { // XXX what base should this use?
+		token kind;
+		pointer_to<identifier> struct_name = nullptr, union_name = nullptr;
+		vector<pointer_to<declaration>> declarations;
+		struct_union(token kind, pointer_to<identifier> name) : kind(kind) {
+			if (kind == token::kw_struct)
+				struct_name = name;
+			else
+				union_name = name;
+		}
+		pointer_to<identifier> name() {
+			return struct_name ? struct_name : union_name;
+		}
+		void add(pointer_to<declaration> decl) {
+			declarations.push_back(decl);
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 	struct declaration_specifiers : public node {
 		vector<pointer_to<type_specifier>> specifiers;
 		declaration_specifiers() = default;
-		// this is only set if the last token actually was an ID
-		pointer_to<type_name> last_id = nullptr;
+		pointer_to<node> type = nullptr; // XXX do we have a more concrete type for "type"?
 		void add(pointer_to<type_specifier> spec) {
 			specifiers.push_back(spec);
-			last_id = nullptr;
 		}
 		void add(pointer_to<type_name> spec) {
-			if (spec->name.type == token::identifier)
-				last_id = spec;
-			else
-				last_id = nullptr;
 			specifiers.push_back(spec);
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
@@ -311,21 +327,39 @@ namespace ast {
 			bool c, v;
 		};
 		vector<pointer_qualifier> pointer;
+		vector<pointer_to<expression>> array;  // nullptr-entries correspond do unsized dimensions
+		vector<pointer_to<declaration>> fn_params; // if single entry is nullptr then this has no specified arguments (ie arbitrary)
 		pointer_to<identifier> name;
 		void add_pointer(bool c, bool v) {
 			pointer.push_back({c, v});
+		}
+		void add_array(pointer_to<expression> array_size) {
+			array.push_back(array_size);
+		}
+		void add_parameter(pointer_to<declaration> param) {
+			fn_params.push_back(param);
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
 	struct declaration : public node {
 		pointer_to<declaration_specifiers> specifiers;
-		pointer_to<ast::declarator> declarator;
-		pointer_to<expression> initializer;
+		vector<tuple<pointer_to<declarator>,
+		             pointer_to<expression>,
+		             pointer_to<expression>>> init_declarators;
+		declaration(pointer_to<declaration_specifiers> specifiers) : specifiers(specifiers) {
+		}
 		declaration(pointer_to<declaration_specifiers> specifiers,
-					pointer_to<ast::declarator> declarator,
-					pointer_to<expression> initializer)
-			: specifiers(specifiers), declarator(declarator), initializer(initializer) {
+					pointer_to<declarator> declarator,
+					pointer_to<expression> initializer = nullptr)
+		: specifiers(specifiers) {
+			add_init_decl(declarator, initializer);
+		}
+		void add_init_decl(pointer_to<declarator> declarator, pointer_to<expression> initializer = nullptr) {
+			init_declarators.push_back({declarator, initializer, nullptr});
+		}
+		void add_width_decl(pointer_to<declarator> declarator, pointer_to<expression> fieldwidth) {
+			init_declarators.push_back({declarator, nullptr, fieldwidth});
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
@@ -366,6 +400,9 @@ namespace ast {
 		void visit(declaration_specifiers *n) override;
 		void visit(declarator *n) override;
 		void visit(declaration *n) override;
+		void visit(struct_union *n) override;
 
 	};
+
+	void print(pointer_to<node> ast);
 }

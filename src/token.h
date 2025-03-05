@@ -46,7 +46,16 @@ struct token {
 	static std::string type_string(enum type t);
 
 	friend std::ostream& operator<<(std::ostream &out, const token &t) {
-		out << "token['" << t.text << "' " << type_string(t.type) << " " << t.line << ":" << t.pos << "]";
+// 		out << "token['" << t.text << "' " << type_string(t.type) << " " << t.line << ":" << t.pos << "]";
+		out << "token['";
+		out << t.text;
+		out << "' ";
+		out << type_string(t.type);
+		out << " ";
+		out << t.line;
+		out << ":";
+		out << t.pos;
+		out << "]";
 		return out;
 	}
 };
