@@ -18,6 +18,9 @@ using namespace ast;
 #define prrule(X,P,Y) std::function<pointer_to<ast::Y>(P)> X = [&](P) -> pointer_to<ast::Y>
 #define fprrule(X,P,Y) X = [&](P) -> pointer_to<ast::Y>
 
+static constexpr bool verbose = true;
+#define log if (verbose) cout
+
 struct scope {
 	token scope_head;
 	std::set<std::string> typenames;
@@ -105,7 +108,13 @@ void parse(const vector<token> &tokens) {
 	helper(check1, enum token::type t) {
 		return peek1() == t;
 	};
-
+	helper(log_tokens, int N) {
+		log << "tokenstream excerpt: ";
+		for (int i = 0; i < N; ++i)
+			if (current+i < tokens.size())
+				log << tokens[i];
+		log << endl;
+	};
 
 	std::function<pointer_to<ast::expression>()> expression;
 	std::function<pointer_to<ast::expression>()> cast_exp;
@@ -293,6 +302,11 @@ void parse(const vector<token> &tokens) {
 		return parse_nary.template operator()<sequence>(assignment_exp, token::comma);
 	};
 	
+	rule(expression_statement) {
+		auto exp = expression();
+		consume(token::semicolon, "Expect a ';' after expression.");
+		return exp;
+	};
 	
 	/* 
 	 * Statements.
@@ -303,19 +317,31 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::declarator>(bool)> declarator;
 	std::function<pointer_to<ast::declaration>(bool)> external_declaration;;
 
+	helper(next_is_expression) {
+		token t = peek();
+		switch (t.type) {
+		case token::identifier:
+		case token::integral: case token::floating: case token::character: case token::string: 
+		case token::star: case token::paren_l: case token::minus: case token::minus_minus:
+			return true;
+		default:
+			return false;
+		}
+	};
+
 	rule(compound_statement) {
 		// the opening brace is consumed already
 		push_scope(previous());
 		vector<pointer_to<node>> statements;
 		while (!match(token::brace_r)) {
-			try {
-				auto decl = external_declaration(false);
-				statements.push_back(decl);
+			if (verbose) {
+				log << "at compound_statement: next_is_exp=" << next_is_expression() << endl;
+				log_tokens(6);
 			}
-			catch (parse_error e) {
-				cout << "ERR: " << e.what() << endl;
-				break;
-			}
+			if (next_is_expression())
+				statements.push_back(expression_statement());
+			else
+				statements.push_back(external_declaration(false));
 		}
 		pop_scope();
 		return statements;
