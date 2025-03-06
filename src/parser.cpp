@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <functional>
+#include <set>
 #include <cassert>
 
 using namespace std;
@@ -12,31 +13,69 @@ using namespace ast;
 #define rule(X) auto X = [&]()
 #define prule(X,P) auto X = [&](P)
 #define frule(X) X = [&]()
+#define pfrule(X,P) X = [&](P)
 #define rrule(X,Y) std::function<pointer_to<ast::Y>()> X = [&]() -> pointer_to<ast::Y>
 #define prrule(X,P,Y) std::function<pointer_to<ast::Y>(P)> X = [&](P) -> pointer_to<ast::Y>
 #define fprrule(X,P,Y) X = [&](P) -> pointer_to<ast::Y>
 
-struct parser {
-
+struct scope {
+	token scope_head;
+	std::set<std::string> typenames;
+	scope(token head) : scope_head(head) {}
+	void define(token t) {
+		typenames.insert(t.text);
+	}
+	bool defined(const std::string &name) {
+		return typenames.contains(name);
+	}
 };
 
 void parse(const vector<token> &tokens) {
 
 	int current = 0;
-
+	
+	// symbol table for lexer feedback
+	vector<scope> scopes;
+	helper(push_scope, token head) {
+		scopes.emplace_back(head);
+	};
+	helper(pop_scope) {
+		scopes.pop_back();
+	};
+	helper(register_type, token id) {
+		scopes.back().define(id);
+	};
+	helper(is_type, token t) {
+		if (t == token::identifier)
+			for (auto it = scopes.rbegin(); it != scopes.rend(); ++it)
+				if (it->defined(t.text))
+					return true;
+		return false;
+	};
+	helper(as_type, token t) {
+		return token(token::type_name, t.text, t.line, t.pos);
+	};
+	helper(fix_token, token t) {
+		if (is_type(t))
+			return as_type(t);
+		return t;
+	};
+	push_scope(token(token::eof, "global scope", -1, -1));
+	
+	// token access
 	helper(at_end) {
 		return tokens[current] == token::eof;
 	};
 	helper(previous) {
 		assert(current > 0);
-		return tokens[current-1];
+		return fix_token(tokens[current-1]);
 	};
 	helper(advance) {
 		if (!at_end()) current++;
 		return previous();
 	};
-	helper(peek) -> const token& {
-		return tokens[current];
+	helper(peek) {
+		return fix_token(tokens[current]);
 	};
 	helper(check, enum token::type t) {
 		if (at_end()) return false;
@@ -58,15 +97,16 @@ void parse(const vector<token> &tokens) {
 			}
 		return false;
 	};
-	helper(peek1) -> const token& {
+	helper(peek1) {
 		if (current < tokens.size())
-			return tokens[current];
-		return tokens[current]; // will be eof
+			return fix_token(tokens[current]);
+		return fix_token(tokens[current]); // will be eof
 	};
 	helper(check1, enum token::type t) {
 		return peek1() == t;
 	};
-	
+
+
 	std::function<pointer_to<ast::expression>()> expression;
 	std::function<pointer_to<ast::expression>()> cast_exp;
 	std::function<pointer_to<ast::expression>()> assignment_exp;
@@ -261,11 +301,30 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::declaration>()> parameter_declaration;
 	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
 	std::function<pointer_to<ast::declarator>(bool)> declarator;
+	std::function<pointer_to<ast::declaration>(bool)> external_declaration;;
+
+	rule(compound_statement) {
+		// the opening brace is consumed already
+		push_scope(previous());
+		vector<pointer_to<node>> statements;
+		while (!match(token::brace_r)) {
+			try {
+				auto decl = external_declaration(false);
+				statements.push_back(decl);
+			}
+			catch (parse_error e) {
+				cout << "ERR: " << e.what() << endl;
+				break;
+			}
+		}
+		pop_scope();
+		return statements;
+	};
 
 	rule(struct_declaration) {
 		// a declaration inside of a struct
 		auto spec = declaration_specifiers();
-		auto declaration = make_node<ast::declaration>(spec);
+		auto declaration = make_node<ast::var_declarations>(spec);
 		while (!match(token::semicolon)) {
 			auto decl = declarator(false);
 			pointer_to<ast::expression> fieldwidth = nullptr;
@@ -290,68 +349,48 @@ void parse(const vector<token> &tokens) {
 		else if (!match(token::brace_l)) // consumes the brace if present
 			return structure;
 		// parse declaration list
+		push_scope(previous());
 		while (!match(token::brace_r)) {
 			auto decl = struct_declaration();
 			structure->add(decl);
 		}
+		pop_scope();
 		return structure;
 	};
 
 	frule(declaration_specifiers) {
 		// parse all possible specifiers into one node
 		auto all = make_node<ast::declaration_specifiers>();
-		bool last_id = false;
 		bool int_mod = false;
-		vector<token> identifiers;
 		while (true) {
 			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double)) {
-				last_id = false;
 				all->type = make_node<ast::type_name>(previous());
 			}
-			else if (match(token::identifier))	{
-				last_id = true;
-				identifiers.push_back(previous());
+			else if (match(token::type_name))	{
+				all->type = make_node<ast::type_name>(previous());
 			}
 			else if (match(token::kw_unsigned, token::kw_signed, token::kw_long, token::kw_short)) {
-				last_id = false;
 				int_mod = true;
 				all->add(make_node<ast::type_modifier>(previous()));
 			}
 			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern)) {
-				last_id = false;
 				all->add(make_node<ast::type_qualifier>(previous()));
 			}
 			else if (match(token::kw_struct, token::kw_union)) {
-				last_id = false;
 				all->type = struct_or_union(previous());
 			}
 			else if (match(token::kw_enum)) {
-				last_id = false;
 				// TODO
 			}
 			else break;
 		}
 
-		// we might have parsed one indentifier too many, if so, push it back.
-		// to make this a little more safe, we first figure out what the typename was
-			
-		if (!all->type) { // if type is set already, then we have a struct,union,enum or one void,char,int,float,double
+		if (!all->type)
 			if (int_mod)  // if there is unsigned, etc -> implicity type is int
 				all->type = make_node<ast::type_name>(token(token::kw_int, "int", -1, -1));
-			else if (identifiers.size() > 0) { // if there are unmatched identifiers, the first one is the type. We follow c99 by disallowing implicit int
-				all->type = make_node<ast::type_name>(identifiers.front());
-				identifiers.erase(identifiers.begin());
-			}
-		}
-		// XXX this is a hack and might be problematic at some point...
-		if (last_id && identifiers.size() > 0) {
-			identifiers.pop_back();
-			rewind1();
-			assert(peek() == token::identifier);
-		}
-		if (identifiers.size() > 0) // XXX is this always the right thing to do?
-			throw parse_error(identifiers.front(), "Superflous identifiers in declaration specifiers.");
-
+			else
+				throw parse_error(peek(), "Expect type name for declaration.");
+		
 		return all;
 	};
 
@@ -402,18 +441,21 @@ void parse(const vector<token> &tokens) {
 		auto spec = declaration_specifiers();
 		auto decl = declarator(true);
 		// this can also be w/o declarator or with "abstract-declarator" (TODO)
-		return make_node<ast::declaration>(spec, decl);
+		return make_node<ast::var_declarations>(spec, decl);
 	};
 
-	rule(external_declaration) {
+	pfrule(external_declaration, bool allow_function) -> pointer_to<ast::declaration> {
 		// declaration and function-definition share this part
 		auto spec = declaration_specifiers();
-		auto declaration = make_node<ast::declaration>(spec); // XXX do we "steal" the ID for the second declarator?
+		auto declaration = make_node<ast::var_declarations>(spec); // XXX do we "steal" the ID for the second declarator?
 		while (!match(token::semicolon)) {
 			auto decl = declarator(false);
-			if (match(token::brace_l)) {
+			if (match(token::brace_l) && allow_function) {
 				// we have a function definition
-				// TODO
+				free_node(declaration);
+				auto block = compound_statement();
+				auto fdef = make_node<ast::function_definition>(spec, decl, block);
+				return fdef;
 			}
 			// we have a declaration
 			pointer_to<ast::expression> init = nullptr;
@@ -431,7 +473,7 @@ void parse(const vector<token> &tokens) {
 		auto root = make_node<ast::translation_unit>();
 		while (!at_end()) {
 			cout << "next " << peek() << endl;
-			root->add(external_declaration());
+			root->add(external_declaration(true));
 		}
 		return root;
 	};

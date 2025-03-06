@@ -8,7 +8,7 @@ struct token {
 	enum type {
 		eof,
 		identifier,
-		// type_name,
+		type_name,
 		integral,
 		floating,
 		character,

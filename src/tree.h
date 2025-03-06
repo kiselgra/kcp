@@ -49,6 +49,8 @@ namespace ast {
 	struct declaration_specifiers;
 	struct declarator;
 	struct declaration;
+	struct var_declarations;
+	struct function_definition;
 	struct struct_union;
 
 	struct visitor {
@@ -84,6 +86,8 @@ namespace ast {
 		virtual void visit(declaration_specifiers *node) {}
 		virtual void visit(declarator             *node) {}
 		virtual void visit(declaration            *node) {}
+		virtual void visit(var_declarations       *node) { forward(declaration); }
+		virtual void visit(function_definition    *node) { forward(declaration); }
 		virtual void visit(struct_union           *node) { /*XXX*/ }
 		#undef forward
 	};
@@ -344,15 +348,20 @@ namespace ast {
 
 	struct declaration : public node {
 		pointer_to<declaration_specifiers> specifiers;
+		declaration(pointer_to<declaration_specifiers> specifiers) : specifiers(specifiers) {
+		}
+	};
+
+	struct var_declarations : public declaration {
 		vector<tuple<pointer_to<declarator>,
 		             pointer_to<expression>,
 		             pointer_to<expression>>> init_declarators;
-		declaration(pointer_to<declaration_specifiers> specifiers) : specifiers(specifiers) {
+		var_declarations(pointer_to<declaration_specifiers> specifiers) : declaration(specifiers) {
 		}
-		declaration(pointer_to<declaration_specifiers> specifiers,
-					pointer_to<declarator> declarator,
-					pointer_to<expression> initializer = nullptr)
-		: specifiers(specifiers) {
+		var_declarations(pointer_to<declaration_specifiers> specifiers,
+						 pointer_to<declarator> declarator,
+						 pointer_to<expression> initializer = nullptr)
+		: declaration(specifiers) {
 			add_init_decl(declarator, initializer);
 		}
 		void add_init_decl(pointer_to<declarator> declarator, pointer_to<expression> initializer = nullptr) {
@@ -363,11 +372,23 @@ namespace ast {
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
+	
+	struct function_definition : public declaration {
+		pointer_to<ast::declarator> declarator;
+		vector<pointer_to<node>> statements; // should be a statement*
+		function_definition(pointer_to<declaration_specifiers> spec, pointer_to<ast::declarator> decl, const vector<pointer_to<node>> statements)
+		: declaration(spec), declarator(decl), statements(statements) {
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 
 	template<typename T, typename... Args> pointer_to<T> make_node(Args... args) {
 		return new T(std::forward<Args>(args)...);
 	}
-
+	template<typename T> void free_node(pointer_to<T> p) {
+		delete p;
+	}
 
 
 	struct printer : public visitor {
@@ -399,7 +420,8 @@ namespace ast {
 		void visit(translation_unit *n) override;
 		void visit(declaration_specifiers *n) override;
 		void visit(declarator *n) override;
-		void visit(declaration *n) override;
+		void visit(var_declarations *n) override;
+		void visit(function_definition *n) override;
 		void visit(struct_union *n) override;
 
 	};

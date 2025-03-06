@@ -1,9 +1,14 @@
 // const unsigned int foo;
 // int blub = 99;
 // const *volatile *const blah = 0;
-static foo bar();
-static foo bar(int foo, blub);
+static int bar();
+static int bar(int foo, float);
 
 const struct foo bar;
 
 struct { int x; float y, z; } foo;
+
+void foo() {
+	int x;
+	x = 0;
+}

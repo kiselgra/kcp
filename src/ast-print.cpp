@@ -127,14 +127,24 @@ namespace ast {
 		out << ")";
 	}
 
-	void printer::visit(declaration *node) {
-		header("declaration");
+	void printer::visit(var_declarations *node) {
+		header("declarations");
 		if (node->specifiers)  node->specifiers->traverse_with(this);
 		for (auto [decl,init,width] : node->init_declarators) {
 			decl->traverse_with(this);
 			if (init)  init->traverse_with(this);
 			if (width) width->traverse_with(this);
 		}
+		out << ")";	
+	}
+		
+	void printer::visit(function_definition *node) {
+		header("function-definition");
+		if (node->specifiers)
+			node->specifiers->traverse_with(this);
+		node->declarator->traverse_with(this);
+		for (auto stmt : node->statements)
+			stmt->traverse_with(this);
 		out << ")";	
 	}
 	
