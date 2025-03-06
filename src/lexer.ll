@@ -137,8 +137,11 @@ ALNUM ({DIGIT}|{ALPHA})
 <COMMENT>"*/"       BEGIN(INITIAL);
 <COMMENT>.*         OUT("comment: " << yytext);
 
-<STRING>\\\" string_accum += yytext;
-<STRING>\" { BEGIN(INITIAL); return token::make_string(yytext, yylineno, string_accum_start); }
+<STRING>\\\" string_accum += '"';
+<STRING>\\n string_accum += '\n';
+<STRING>\\t string_accum += '\t';
+<STRING>\\r string_accum += '\r';
+<STRING>\" { BEGIN(INITIAL); return token::make_string(string_accum, yylineno, string_accum_start); }
 <STRING>[^\n"\\] string_accum += yytext;
 <STRING>\n std::cerr << "Lexer error on line " << yylineno << ": strings may not contain newlines." << std::endl;
 
