@@ -144,8 +144,7 @@ namespace ast {
 		if (node->specifiers)
 			node->specifiers->traverse_with(this);
 		node->declarator->traverse_with(this);
-		for (auto stmt : node->statements)
-			stmt->traverse_with(this);
+		node->block->traverse_with(this);
 		out << ")";	
 	}
 	
@@ -154,6 +153,19 @@ namespace ast {
 		if (node->name()) out << " " << node->name()->token.text;
 		for (auto x : node->declarations)
 			x->traverse_with(this);
+	}
+	
+	void printer::visit(expression_stmt *node) {
+		node->expression->traverse_with(this);
+	}
+
+	void printer::visit(block *node) {
+		header("block");
+		for (auto x : node->statements) {
+			out << ind() << typeid(*x).name();
+			x->traverse_with(this);
+		}
+		out << ")";
 	}
 
 	void printer::visit(literal *node) {

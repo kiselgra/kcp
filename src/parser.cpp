@@ -305,7 +305,7 @@ void parse(const vector<token> &tokens) {
 	rule(expression_statement) {
 		auto exp = expression();
 		consume(token::semicolon, "Expect a ';' after expression.");
-		return exp;
+		return make_node<ast::expression_stmt>(exp);
 	};
 	
 	/* 
@@ -316,6 +316,9 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
 	std::function<pointer_to<ast::declarator>(bool)> declarator;
 	std::function<pointer_to<ast::declaration>(bool)> external_declaration;;
+	
+	std::function<pointer_to<ast::statement>()> statement;	//XXX might be statement
+	std::function<pointer_to<ast::block>()> compound_statement;
 
 	helper(next_is_expression) {
 		token t = peek();
@@ -329,22 +332,31 @@ void parse(const vector<token> &tokens) {
 		}
 	};
 
-	rule(compound_statement) {
+
+	// the loop body should be in statement()
+	frule(statement) -> pointer_to<ast::statement> {
+		if (verbose) {
+			log << "at statement(): next_is_exp=" << next_is_expression() << endl;
+			log_tokens(6);
+		}
+		if (next_is_expression())
+			return expression_statement();
+		else if (match(token::kw_if))
+		// XXX
+			return expression_statement();
+		else
+			return external_declaration(false);
+	};
+
+	frule(compound_statement) {
 		// the opening brace is consumed already
 		push_scope(previous());
-		vector<pointer_to<node>> statements;
+		vector<pointer_to<ast::statement>> statements;
 		while (!match(token::brace_r)) {
-			if (verbose) {
-				log << "at compound_statement: next_is_exp=" << next_is_expression() << endl;
-				log_tokens(6);
-			}
-			if (next_is_expression())
-				statements.push_back(expression_statement());
-			else
-				statements.push_back(external_declaration(false));
+			statements.push_back(statement());
 		}
 		pop_scope();
-		return statements;
+		return make_node<ast::block>(statements);
 	};
 
 	rule(struct_declaration) {

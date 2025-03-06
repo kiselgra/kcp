@@ -52,6 +52,10 @@ namespace ast {
 	struct var_declarations;
 	struct function_definition;
 	struct struct_union;
+	struct block;
+	struct statement;
+	struct expression_stmt;
+	struct if_stmt;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -89,6 +93,10 @@ namespace ast {
 		virtual void visit(var_declarations       *node) { forward(declaration); }
 		virtual void visit(function_definition    *node) { forward(declaration); }
 		virtual void visit(struct_union           *node) { /*XXX*/ }
+		virtual void visit(block                  *node) { /*XXX*/ }
+		virtual void visit(statement              *node) { /*XXX*/ }
+		virtual void visit(expression_stmt        *node) { forward(statement); }
+		virtual void visit(if_stmt                *node) { forward(statement); }
 		#undef forward
 	};
 
@@ -252,7 +260,6 @@ namespace ast {
 
 
 
-// 	struct statement; // move up
 
 	struct translation_unit : public node {
 		vector<pointer_to<node>> toplevel; // XXX 
@@ -261,14 +268,13 @@ namespace ast {
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
+	
 
-// 	struct statement : public node {
-// 		void traverse_with(visitor *v) override { v->visit(this); }
-// 	};
-// 
-// 	struct function_definition : public statement {
-// 		void traverse_with(visitor *v) override { v->visit(this); }
-// 	};
+	
+	struct statement : public node {
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 
 	struct type_specifier : public node {
 		::token name;
@@ -346,7 +352,7 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
-	struct declaration : public node {
+	struct declaration : public statement {
 		pointer_to<declaration_specifiers> specifiers;
 		declaration(pointer_to<declaration_specifiers> specifiers) : specifiers(specifiers) {
 		}
@@ -375,12 +381,25 @@ namespace ast {
 	
 	struct function_definition : public declaration {
 		pointer_to<ast::declarator> declarator;
-		vector<pointer_to<node>> statements; // should be a statement*
-		function_definition(pointer_to<declaration_specifiers> spec, pointer_to<ast::declarator> decl, const vector<pointer_to<node>> statements)
-		: declaration(spec), declarator(decl), statements(statements) {
+		pointer_to<ast::block> block;
+		function_definition(pointer_to<declaration_specifiers> spec, pointer_to<ast::declarator> decl, pointer_to<ast::block> block)
+		: declaration(spec), declarator(decl), block(block) {
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
+
+	struct block : public statement {
+		vector<pointer_to<statement>> statements;
+		block(const vector<pointer_to<statement>> &stmts) : statements(stmts) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct expression_stmt : public statement {
+		pointer_to<ast::expression> expression;
+		expression_stmt(pointer_to<ast::expression> expr) : expression(expr) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 
 
 	template<typename T, typename... Args> pointer_to<T> make_node(Args... args) {
@@ -423,6 +442,8 @@ namespace ast {
 		void visit(var_declarations *n) override;
 		void visit(function_definition *n) override;
 		void visit(struct_union *n) override;
+		void visit(block *n) override;
+		void visit(expression_stmt *n) override;
 
 	};
 
