@@ -365,10 +365,10 @@ namespace ast {
 			add_init_decl(declarator, initializer);
 		}
 		void add_init_decl(pointer_to<declarator> declarator, pointer_to<expression> initializer = nullptr) {
-			init_declarators.push_back({declarator, initializer, nullptr});
+			init_declarators.emplace_back(declarator, initializer, nullptr);
 		}
 		void add_width_decl(pointer_to<declarator> declarator, pointer_to<expression> fieldwidth) {
-			init_declarators.push_back({declarator, nullptr, fieldwidth});
+			init_declarators.emplace_back(declarator, nullptr, fieldwidth);
 		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};

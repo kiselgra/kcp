@@ -8,7 +8,7 @@ AM_INIT_AUTOMAKE([foreign])
 AC_PROG_CXX
 AC_LANG([C++])
 
-AC_PROG_LEX([yywrap])
+AC_PROG_LEX([noyywrap])
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
