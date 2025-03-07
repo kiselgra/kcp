@@ -56,6 +56,7 @@ namespace ast {
 	struct statement;
 	struct expression_stmt;
 	struct if_stmt;
+	struct return_stmt;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -97,6 +98,7 @@ namespace ast {
 		virtual void visit(statement              *node) { /*XXX*/ }
 		virtual void visit(expression_stmt        *node) { forward(statement); }
 		virtual void visit(if_stmt                *node) { forward(statement); }
+		virtual void visit(return_stmt            *node) { forward(statement); }
 		#undef forward
 	};
 
@@ -400,6 +402,21 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
+	struct if_stmt : public statement {
+		pointer_to<expression> condition;
+		pointer_to<statement> consequent, alternate;
+		if_stmt(pointer_to<ast::expression> condition, pointer_to<statement> consequent, pointer_to<statement> alternate = nullptr)
+		: condition(condition), consequent(consequent), alternate(alternate) {
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct return_stmt : public statement {
+		pointer_to<ast::expression> expression;
+		return_stmt(pointer_to<ast::expression> expr = nullptr) : expression(expr) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 
 
 	template<typename T, typename... Args> pointer_to<T> make_node(Args... args) {
@@ -435,6 +452,7 @@ namespace ast {
 		void visit(member_access *node) override;
 		void visit(identifier *n) override;
 		void visit(literal *n) override;
+		void visit(string_lit *n) override;
 		
 		void visit(translation_unit *n) override;
 		void visit(declaration_specifiers *n) override;
@@ -444,6 +462,8 @@ namespace ast {
 		void visit(struct_union *n) override;
 		void visit(block *n) override;
 		void visit(expression_stmt *n) override;
+		void visit(if_stmt *n) override;
+		void visit(return_stmt *n) override;
 
 	};
 

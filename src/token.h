@@ -26,7 +26,7 @@ struct token {
 		size_of, kw_void, kw_char, kw_short, kw_int, kw_long, kw_float, kw_double, kw_signed, kw_unsigned, kw_const, kw_volatile, kw_struct, kw_union, kw_enum,
 		kw_static, kw_auto, kw_register, kw_extern,
 		// special words for statements
-		kw_if,
+		kw_if, kw_else, kw_return,
 	};
 	int line;
 	int pos;

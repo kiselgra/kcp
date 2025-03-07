@@ -122,7 +122,9 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"auto" matched(kw_auto);
 <INITIAL>"register" matched(kw_register);
 
-<INITIAL>"kw_if" matched(kw_if);
+<INITIAL>"if" matched(kw_if);
+<INITIAL>"else" matched(kw_else);
+<INITIAL>"return" matched(kw_return);
 
 <INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng);
 <INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng);

@@ -8,6 +8,8 @@
 
 using std::string;
 
+std::string demangle(const std::string &name); // see below, copied from S/O
+
 namespace ast {
 
 #define indent indent_block indent_for_this_node(this)
@@ -22,6 +24,9 @@ namespace ast {
 	}
 	void printer::visit(n_ary *node) {
 		string name = typeid(*node).name();
+		name = demangle(name);
+		if (name.find_last_of(":") != string::npos)
+			name = name.substr(name.find_last_of(":")+1);
 		header(name);
 		if (std::transform_reduce(node->operands.begin(), node->operands.end(), true, std::logical_and{},
 						[](pointer_to<expression> e){ return e->is<literal>(); })) {
@@ -82,7 +87,23 @@ namespace ast {
 		out << ind() << node->token.text;
 	}
 
-
+	void printer::visit(literal *node) {
+		out << ind() << node->token.text;
+	}
+		
+	void printer::visit(string_lit *node) {
+		string escaped;
+		for (char c : node->token.text)
+			switch (c) {
+			case '\n': escaped += "\\n";  break;
+			case '\t': escaped += "\\t";  break;
+			case '\r': escaped += "\\r";  break;
+			case '"':  escaped += "\\\""; break;
+			default:   escaped += c;
+			}
+		out << ind() << '"' << escaped << '"';
+	}
+	
 	void printer::visit(translation_unit *node) {
 		for (auto x : node->toplevel)
 			x->traverse_with(this);
@@ -159,19 +180,31 @@ namespace ast {
 		node->expression->traverse_with(this);
 	}
 
+	void printer::visit(if_stmt *node) {
+		header("if");
+		node->condition->traverse_with(this);
+		node->consequent->traverse_with(this);
+		if (node->alternate)
+			node->alternate->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(return_stmt *node) {
+		header("return");
+		if (node->expression)
+			node->expression->traverse_with(this);
+		out << ")";
+	}
+
 	void printer::visit(block *node) {
 		header("block");
 		for (auto x : node->statements) {
-			out << ind() << typeid(*x).name();
 			x->traverse_with(this);
 		}
 		out << ")";
 	}
 
-	void printer::visit(literal *node) {
-		out << ind() << node->token.text;
-	}
-	
+
 	
 	
 	void print(pointer_to<node> ast) {
@@ -180,3 +213,20 @@ namespace ast {
 	}
 
 }
+
+
+// https://stackoverflow.com/a/4541470
+#include <cstdlib>
+#include <memory>
+#include <cxxabi.h>
+
+std::string demangle(const std::string &name) {
+	int status = -4; // some arbitrary value to eliminate the compiler warning
+	// enable c++11 by passing the flag -std=c++11 to g++
+	std::unique_ptr<char, void(*)(void*)> res {
+		abi::__cxa_demangle(name.c_str(), NULL, NULL, &status),
+			std::free
+	};
+	return (status==0) ? res.get() : name.c_str() ;
+}
+

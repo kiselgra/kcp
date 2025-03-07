@@ -332,6 +332,23 @@ void parse(const vector<token> &tokens) {
 		}
 	};
 
+	rule(if_statement) {
+		consume(token::paren_l, "Expect '(' after 'if'");
+		auto condition = expression();
+		consume(token::paren_r, "Expect ')' after 'if' condition");
+		auto consequent = statement();
+		pointer_to<ast::statement> alternate = nullptr;
+		if (match(token::kw_else))
+			alternate = statement();
+		return make_node<if_stmt>(condition, consequent, alternate);
+	};
+	rule(return_statement) {
+		if (match(token::semicolon))
+			return make_node<return_stmt>();
+		auto expr = expression();
+		consume(token::semicolon, "Expect ';' after return expression.");
+		return make_node<return_stmt>(expr);
+	};
 
 	// the loop body should be in statement()
 	frule(statement) -> pointer_to<ast::statement> {
@@ -339,13 +356,11 @@ void parse(const vector<token> &tokens) {
 			log << "at statement(): next_is_exp=" << next_is_expression() << endl;
 			log_tokens(6);
 		}
-		if (next_is_expression())
-			return expression_statement();
-		else if (match(token::kw_if))
-		// XXX
-			return expression_statement();
-		else
-			return external_declaration(false);
+		if (next_is_expression())         return expression_statement();
+		else if (match(token::kw_if))     return if_statement();
+		else if (match(token::kw_return)) return return_statement();
+		else if (match(token::brace_l))   return compound_statement();
+		else                              return external_declaration(false);
 	};
 
 	frule(compound_statement) {
