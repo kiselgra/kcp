@@ -513,6 +513,8 @@ void parse(const vector<token> &tokens) {
 			}
 			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern)) {
 				all->add(make_node<ast::type_qualifier>(previous()));
+				if (previous() == token::kw_register)
+					int_mod = true;
 			}
 			else if (match(token::kw_struct, token::kw_union)) {
 				all->type = struct_or_union(previous());
