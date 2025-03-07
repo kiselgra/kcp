@@ -175,7 +175,20 @@ namespace ast {
 		for (auto x : node->declarations)
 			x->traverse_with(this);
 	}
-	
+
+	void printer::visit(enumeration *node) {
+		header("enum");
+		if (node->name) out << " " << node->name->token.text;
+		for (auto [n,v] : node->enumerators) {
+			out << ind() << n->token.text;
+			if (v) {
+				out << " = ";
+				v->traverse_with(this);
+			}
+		}
+		out << ")";
+	}
+
 	void printer::visit(expression_stmt *node) {
 		node->expression->traverse_with(this);
 	}

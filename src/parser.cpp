@@ -495,16 +495,50 @@ void parse(const vector<token> &tokens) {
 		pop_scope();
 		return structure;
 	};
+	rule(enum_specifier) {
+		// we have parsed the enum keyword already
+		pointer_to<ast::identifier> name = nullptr;
+		if (match(token::identifier))
+			name = make_node<ast::identifier>(previous());
+		auto enumeration = make_node<ast::enumeration>(name);
+		// if not named, enumerator-list is not optional
+		if (!name)
+			consume(token::brace_l, "Expected '{' after anonymous struct or union.");
+		else if (!match(token::brace_l)) // consumes the brace if present
+			return enumeration;
+		while (true) {
+			auto name = identifier();
+			pointer_to<ast::expression> value = nullptr;
+			if (match(token::equals))
+				value = conditional_exp();
+			enumeration->add(name, value);
+			if (peek() == token::brace_r)
+				break;
+			else if (peek() == token::comma && peek1() == token::brace_r) {
+				advance();
+				break;
+			}
+			consume(token::comma, "Expect ',' or '}' after enumeration item.");
+		}
+		consume(token::brace_r, "Expect ',' or '}' after enumeration item.");
+		return enumeration;
+	};
 
 	frule(declaration_specifiers) {
 		// parse all possible specifiers into one node
 		auto all = make_node<ast::declaration_specifiers>();
 		bool int_mod = false;
+		helper(type_duplicate_check) {
+			if (all->type)
+				throw parse_error(previous(), "Duplicate type in declaration.");
+		};
 		while (true) {
 			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double)) {
+				type_duplicate_check();
 				all->type = make_node<ast::type_name>(previous());
 			}
 			else if (match(token::type_name))	{
+				type_duplicate_check();
 				all->type = make_node<ast::type_name>(previous());
 			}
 			else if (match(token::kw_unsigned, token::kw_signed, token::kw_long, token::kw_short)) {
@@ -517,10 +551,12 @@ void parse(const vector<token> &tokens) {
 					int_mod = true;
 			}
 			else if (match(token::kw_struct, token::kw_union)) {
+				type_duplicate_check();
 				all->type = struct_or_union(previous());
 			}
 			else if (match(token::kw_enum)) {
-				// TODO
+				type_duplicate_check();
+				all->type = enum_specifier();
 			}
 			else break;
 		}
@@ -576,7 +612,6 @@ void parse(const vector<token> &tokens) {
 		return decl;
 	};
 	
-	// TODO test a function w/o params, test one with, add visitor for this
 	frule(parameter_declaration) {
 		auto spec = declaration_specifiers();
 		auto decl = declarator(true);
@@ -587,7 +622,7 @@ void parse(const vector<token> &tokens) {
 	pfrule(external_declaration, bool allow_function) -> pointer_to<ast::declaration> {
 		// declaration and function-definition share this part
 		auto spec = declaration_specifiers();
-		auto declaration = make_node<ast::var_declarations>(spec); // XXX do we "steal" the ID for the second declarator?
+		auto declaration = make_node<ast::var_declarations>(spec);
 		while (!match(token::semicolon)) {
 			auto decl = declarator(false);
 			if (match(token::brace_l) && allow_function) {
@@ -600,7 +635,7 @@ void parse(const vector<token> &tokens) {
 			// we have a declaration
 			pointer_to<ast::expression> init = nullptr;
 			if (match(token::equals)) {
-				init = assignment_exp(); // TODO other cases
+				init = assignment_exp(); // TODO other cases, see "initializer"
 			}
 			declaration->add_init_decl(decl, init);
 			if (!check(token::semicolon))

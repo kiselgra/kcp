@@ -9,6 +9,7 @@
 namespace ast {
 	using std::vector;
 	using std::tuple;
+	using std::pair;
 	
 	template<typename T> using pointer_to = T*;
 	template<typename T> T* unwrap(pointer_to<T> p) { return p; }
@@ -52,6 +53,7 @@ namespace ast {
 	struct var_declarations;
 	struct function_definition;
 	struct struct_union;
+	struct enumeration;
 	struct block;
 	struct statement;
 	struct expression_stmt;
@@ -104,6 +106,7 @@ namespace ast {
 		virtual void visit(var_declarations       *node) { forward(declaration); }
 		virtual void visit(function_definition    *node) { forward(declaration); }
 		virtual void visit(struct_union           *node) { /*XXX*/ }
+		virtual void visit(enumeration            *node) { /*XXX*/ }
 		virtual void visit(block                  *node) { /*XXX*/ }
 		virtual void visit(statement              *node) { /*XXX*/ }
 		virtual void visit(expression_stmt        *node) { forward(statement); }
@@ -341,6 +344,17 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
+	struct enumeration : public node { // XXX what base should this use?
+		pointer_to<identifier> name = nullptr;
+		vector<pair<pointer_to<identifier>, pointer_to<expression>>> enumerators;
+		enumeration(pointer_to<identifier> name) : name(name) {
+		}
+		void add(pointer_to<identifier> enumerator, pointer_to<expression> value = nullptr) {
+			enumerators.emplace_back(enumerator, value);
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
 	struct declaration_specifiers : public node {
 		vector<pointer_to<type_specifier>> specifiers;
 		declaration_specifiers() = default;
@@ -546,6 +560,7 @@ namespace ast {
 		void visit(var_declarations *n) override;
 		void visit(function_definition *n) override;
 		void visit(struct_union *n) override;
+		void visit(enumeration *n) override;
 		void visit(block *n) override;
 		void visit(expression_stmt *n) override;
 		void visit(if_stmt *n) override;
