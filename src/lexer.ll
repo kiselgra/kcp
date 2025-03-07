@@ -64,6 +64,7 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"%="  matched(percent_equals);
 <INITIAL>"+="  matched(plus_equals);
 <INITIAL>"-="  matched(minus_equals);
+<INITIAL>"&="  matched(percent_equals);
 <INITIAL>"&="  matched(amp_equals);
 <INITIAL>"^="  matched(hat_equals);
 <INITIAL>"|="  matched(pipe_equals);
@@ -98,6 +99,7 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"?"  matched(question);
 <INITIAL>"!"  matched(exclamation);
 <INITIAL>"|"  matched(pipe);
+<INITIAL>"%"  matched(percent);
 <INITIAL>"&"  matched(ampersand);
 <INITIAL>"^"  matched(hat);
 <INITIAL>"~"  matched(tilde);
@@ -125,6 +127,13 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"if" matched(kw_if);
 <INITIAL>"else" matched(kw_else);
 <INITIAL>"return" matched(kw_return);
+<INITIAL>"switch" matched(kw_switch);
+<INITIAL>"case" matched(kw_case);
+<INITIAL>"default" matched(kw_default);
+<INITIAL>"while" matched(kw_while);
+<INITIAL>"do" matched(kw_do);
+<INITIAL>"for" matched(kw_for);
+<INITIAL>"goto" matched(kw_goto);
 
 <INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng);
 <INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng);

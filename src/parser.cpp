@@ -252,7 +252,7 @@ void parse(const vector<token> &tokens) {
 		return outer ? outer : lhs;
 	};
 	rule(multiplicative_exp) {
-		return parse_nary.template operator()<ast::arith>(cast_exp, token::star, token::slash);
+		return parse_nary.template operator()<ast::arith>(cast_exp, token::star, token::slash, token::percent);
 	};
 	rule(additive_exp) {
 		return parse_nary.template operator()<ast::arith>(multiplicative_exp, token::plus, token::minus);
@@ -296,7 +296,7 @@ void parse(const vector<token> &tokens) {
 	frule(assignment_exp) {
 		return parse_nary.template operator()<ast::assign>(conditional_exp, 
 														   token::equals, token::star_equals, token::slash_equals, token::percent_equals, token::plus_equals, token::minus_equals, 
-														   token::left_left_equals, token::right_right_equals, token::amp_equals, token::hat_equals, token::pipe_equals);
+														   token::left_left_equals, token::right_right_equals, token::percent_equals, token::amp_equals, token::hat_equals, token::pipe_equals);
 	};
 	frule(expression) {
 		return parse_nary.template operator()<sequence>(assignment_exp, token::comma);
@@ -349,6 +349,13 @@ void parse(const vector<token> &tokens) {
 		consume(token::semicolon, "Expect ';' after return expression.");
 		return make_node<return_stmt>(expr);
 	};
+	rule(while_statement) {
+		consume(token::paren_l, "Expect '(' after while.");
+		auto test = expression();
+		consume(token::paren_r, "Expect ')' after while condition.");
+		auto stmt = statement();
+		return make_node<while_stmt>(test, stmt);
+	};
 
 	// the loop body should be in statement()
 	frule(statement) -> pointer_to<ast::statement> {
@@ -359,7 +366,9 @@ void parse(const vector<token> &tokens) {
 		if (next_is_expression())         return expression_statement();
 		else if (match(token::kw_if))     return if_statement();
 		else if (match(token::kw_return)) return return_statement();
+		else if (match(token::kw_while))  return while_statement();
 		else if (match(token::brace_l))   return compound_statement();
+		else if (match(token::semicolon)) return make_node<block>();
 		else                              return external_declaration(false);
 	};
 

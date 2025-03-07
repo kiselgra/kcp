@@ -14,7 +14,7 @@ struct token {
 		character,
 		string,
 		// operators
-		star, slash, plus, minus, pipe_pipe, amp_amp, pipe, ampersand, hat, equal_equal, exclamation_equal, left_equal, right_equal, 
+		star, slash, plus, minus, pipe_pipe, amp_amp, pipe, percent, ampersand, hat, equal_equal, exclamation_equal, left_equal, right_equal, 
 		left, right, left_left, right_right, plus_plus, minus_minus, tilde, arrow,
 		// delimited
 		paren_l, paren_r, bracket_l, bracket_r, brace_l, brace_r,
@@ -26,7 +26,7 @@ struct token {
 		size_of, kw_void, kw_char, kw_short, kw_int, kw_long, kw_float, kw_double, kw_signed, kw_unsigned, kw_const, kw_volatile, kw_struct, kw_union, kw_enum,
 		kw_static, kw_auto, kw_register, kw_extern,
 		// special words for statements
-		kw_if, kw_else, kw_return,
+		kw_if, kw_else, kw_return, kw_switch, kw_case, kw_default, kw_while, kw_do, kw_for, kw_goto,
 	};
 	int line;
 	int pos;

@@ -196,6 +196,13 @@ namespace ast {
 		out << ")";
 	}
 
+	void printer::visit(while_stmt *node) {
+		header("while");
+		node->condition->traverse_with(this);
+		node->body->traverse_with(this);
+		out << ")";
+	}
+
 	void printer::visit(block *node) {
 		header("block");
 		for (auto x : node->statements) {

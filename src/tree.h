@@ -57,6 +57,7 @@ namespace ast {
 	struct expression_stmt;
 	struct if_stmt;
 	struct return_stmt;
+	struct while_stmt;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -99,6 +100,7 @@ namespace ast {
 		virtual void visit(expression_stmt        *node) { forward(statement); }
 		virtual void visit(if_stmt                *node) { forward(statement); }
 		virtual void visit(return_stmt            *node) { forward(statement); }
+		virtual void visit(while_stmt             *node) { forward(statement); }
 		#undef forward
 	};
 
@@ -392,6 +394,7 @@ namespace ast {
 
 	struct block : public statement {
 		vector<pointer_to<statement>> statements;
+		block() {}
 		block(const vector<pointer_to<statement>> &stmts) : statements(stmts) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
@@ -414,6 +417,13 @@ namespace ast {
 	struct return_stmt : public statement {
 		pointer_to<ast::expression> expression;
 		return_stmt(pointer_to<ast::expression> expr = nullptr) : expression(expr) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct while_stmt : public statement {
+		pointer_to<ast::expression> condition;
+		pointer_to<ast::statement> body;
+		while_stmt(pointer_to<ast::expression> condition, pointer_to<ast::statement> body) : condition(condition), body(body) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -464,6 +474,7 @@ namespace ast {
 		void visit(expression_stmt *n) override;
 		void visit(if_stmt *n) override;
 		void visit(return_stmt *n) override;
+		void visit(while_stmt *n) override;
 
 	};
 
