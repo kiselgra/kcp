@@ -189,6 +189,14 @@ namespace ast {
 		out << ")";
 	}
 
+	void printer::visit(switch_stmt *node) {
+		header("switch");
+		node->expression->traverse_with(this);
+		if (node->body)
+			node->body->traverse_with(this);
+		out << ")";
+	}
+
 	void printer::visit(jump_stmt *node) {
 		header(node->kind.text);
 		if (node->expression)
@@ -196,9 +204,26 @@ namespace ast {
 		out << ")";
 	}
 
-	void printer::visit(while_stmt *node) {
-		header("while");
+	void printer::visit(label_stmt *node) {
+		header("label");
+		if (node->keyword) out << " " << node->keyword->text;
+		if (node->label)
+			node->label->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(loop_stmt *node) {
+		header("loop");
 		node->condition->traverse_with(this);
+		node->body->traverse_with(this);
+		out << ")";
+	}
+
+	void printer::visit(for_loop *node) {
+		header("for");
+		if (node->init) node->init->traverse_with(this);
+		if (node->condition) node->condition->traverse_with(this);
+		if (node->step) node->step->traverse_with(this);
 		node->body->traverse_with(this);
 		out << ")";
 	}

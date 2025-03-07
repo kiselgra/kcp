@@ -62,7 +62,11 @@ namespace ast {
 	struct break_stmt;
 	struct continue_stmt;
 	struct goto_stmt;
-	struct while_stmt;
+	struct label_stmt;
+	struct loop_stmt;
+	struct while_loop;
+	struct dowhile_loop;
+	struct for_loop;
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
@@ -110,7 +114,11 @@ namespace ast {
 		virtual void visit(break_stmt             *node) { forward(jump_stmt); }
 		virtual void visit(continue_stmt          *node) { forward(jump_stmt); }
 		virtual void visit(goto_stmt              *node) { forward(jump_stmt); }
-		virtual void visit(while_stmt             *node) { forward(statement); }
+		virtual void visit(label_stmt             *node) { forward(statement); }
+		virtual void visit(loop_stmt              *node) { forward(statement); }
+		virtual void visit(while_loop             *node) { forward(loop_stmt); }
+		virtual void visit(dowhile_loop           *node) { forward(loop_stmt); }
+		virtual void visit(for_loop               *node) { forward(loop_stmt); }
 		#undef forward
 	};
 
@@ -225,7 +233,7 @@ namespace ast {
 	struct subscript : public expression {
 		::token opening_bracket;
 		pointer_to<expression> array, index;
-		subscript(::token opening_bracket, pointer_to<expression> array, pointer_to<expression> subscript) : opening_bracket(opening_bracket), array(array), index(index) {}
+		subscript(::token opening_bracket, pointer_to<expression> array, pointer_to<expression> index) : opening_bracket(opening_bracket), array(array), index(index) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -460,10 +468,38 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
-	struct while_stmt : public statement {
+	struct label_stmt : public statement {
+		token *keyword = nullptr;
+		pointer_to<ast::expression> label;
+		label_stmt(token t, pointer_to<ast::expression> expr = nullptr) : keyword(new token(t)), label(expr) {}
+		label_stmt(pointer_to<ast::expression> expr = nullptr) : label(expr) {}
+		~label_stmt() { delete keyword; }
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct loop_stmt : public statement {
 		pointer_to<ast::expression> condition;
 		pointer_to<ast::statement> body;
-		while_stmt(pointer_to<ast::expression> condition, pointer_to<ast::statement> body) : condition(condition), body(body) {}
+		loop_stmt(pointer_to<ast::expression> condition, pointer_to<ast::statement> body) : condition(condition), body(body) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct while_loop : public loop_stmt {
+		while_loop(pointer_to<ast::expression> condition, pointer_to<ast::statement> body) : loop_stmt(condition, body) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct dowhile_loop : public loop_stmt {
+		dowhile_loop(pointer_to<ast::expression> condition, pointer_to<ast::statement> body) : loop_stmt(condition, body) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct for_loop : public loop_stmt {
+		pointer_to<statement> init;
+		pointer_to<expression> step;
+		for_loop(pointer_to<statement> init, pointer_to<ast::expression> condition, pointer_to<expression> step, pointer_to<ast::statement> body)
+		: loop_stmt(condition, body), init(init), step(step) {
+		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -513,8 +549,11 @@ namespace ast {
 		void visit(block *n) override;
 		void visit(expression_stmt *n) override;
 		void visit(if_stmt *n) override;
+		void visit(switch_stmt *n) override;
 		void visit(jump_stmt *n) override;
-		void visit(while_stmt *n) override;
+		void visit(label_stmt *n) override;
+		void visit(loop_stmt *n) override;
+		void visit(for_loop *n) override;
 
 	};
 
