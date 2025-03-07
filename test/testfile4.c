@@ -5,7 +5,8 @@ int fak(int n) {
 }
 
 void random_break(void) {
-	while (rand() % 100 != 0) ;
+	while (rand() % 100 != 0) if (a) break; else continue;
+	goto togo;
 }
 
 int main(int argc, char **argv) {

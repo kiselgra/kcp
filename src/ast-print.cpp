@@ -189,8 +189,8 @@ namespace ast {
 		out << ")";
 	}
 
-	void printer::visit(return_stmt *node) {
-		header("return");
+	void printer::visit(jump_stmt *node) {
+		header(node->kind.text);
 		if (node->expression)
 			node->expression->traverse_with(this);
 		out << ")";

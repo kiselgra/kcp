@@ -53,10 +53,28 @@ std::string token::type_string(enum token::type t) {
 	case minus_minus:        return "--";
 	case dot:                return ".";
 	case arrow:              return "->";
-	case kw_static:   case kw_auto:     case kw_register: case kw_extern:   case size_of: 
-	case kw_void:     case kw_char:     case kw_short:    case kw_int:      case kw_long:
-	case kw_float:    case kw_double:   case kw_signed:   case kw_unsigned: case kw_const:
-	case kw_volatile: case kw_struct:   case kw_union:    case kw_enum:     
+							 // catchall:
+	case kw_auto:
+	case kw_break:
+	case kw_char:
+	case kw_const:
+	case kw_continue:
+	case kw_double:
+	case kw_enum:     
+	case kw_extern:
+	case kw_float:
+	case kw_int:
+	case kw_long:
+	case kw_register:
+	case kw_short:
+	case kw_signed:
+	case kw_static:
+	case kw_struct:
+	case kw_union:
+	case kw_unsigned:
+	case kw_void:
+	case kw_volatile:
+	case size_of: 
 							 return "keyword";
 	default: return "UNKNOWN_TOKEN_TYPE";
 	}

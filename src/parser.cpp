@@ -342,12 +342,32 @@ void parse(const vector<token> &tokens) {
 			alternate = statement();
 		return make_node<if_stmt>(condition, consequent, alternate);
 	};
-	rule(return_statement) {
+	rule(switch_statement) {
+		consume(token::paren_l, "Expect '(' after 'switch'");
+		auto condition = expression();
+		consume(token::paren_r, "Expect ')' after 'switch' expression");
+		auto body = statement();
+		return make_node<switch_stmt>(condition, body);
+	};
+	prule(return_statement, token t) {
 		if (match(token::semicolon))
-			return make_node<return_stmt>();
+			return make_node<return_stmt>(t);
 		auto expr = expression();
 		consume(token::semicolon, "Expect ';' after return expression.");
-		return make_node<return_stmt>(expr);
+		return make_node<return_stmt>(t, expr);
+	};
+	prule(break_statement, token t) {
+		consume(token::semicolon, "Expect ';' after 'break'.");
+		return make_node<break_stmt>(t);
+	};
+	prule(continue_statement, token t) {
+		consume(token::semicolon, "Expect ';' after 'continue'.");
+		return make_node<continue_stmt>(t);
+	};
+	prule(goto_statement, token t) {
+		auto id = identifier();
+		consume(token::semicolon, "Expect ';' after goto label.");
+		return make_node<goto_stmt>(t, id);
 	};
 	rule(while_statement) {
 		consume(token::paren_l, "Expect '(' after while.");
@@ -363,13 +383,17 @@ void parse(const vector<token> &tokens) {
 			log << "at statement(): next_is_exp=" << next_is_expression() << endl;
 			log_tokens(6);
 		}
-		if (next_is_expression())         return expression_statement();
-		else if (match(token::kw_if))     return if_statement();
-		else if (match(token::kw_return)) return return_statement();
-		else if (match(token::kw_while))  return while_statement();
-		else if (match(token::brace_l))   return compound_statement();
-		else if (match(token::semicolon)) return make_node<block>();
-		else                              return external_declaration(false);
+		if (next_is_expression())           return expression_statement();
+		else if (match(token::kw_if))       return if_statement();
+		else if (match(token::kw_switch))   return switch_statement();
+		else if (match(token::kw_return))   return return_statement(previous());
+		else if (match(token::kw_break))    return break_statement(previous());
+		else if (match(token::kw_continue)) return continue_statement(previous());
+		else if (match(token::kw_goto))     return goto_statement(previous());
+		else if (match(token::kw_while))    return while_statement();
+		else if (match(token::brace_l))     return compound_statement();
+		else if (match(token::semicolon))   return make_node<block>();
+		else                                return external_declaration(false);
 	};
 
 	frule(compound_statement) {

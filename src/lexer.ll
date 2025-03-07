@@ -64,7 +64,6 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"%="  matched(percent_equals);
 <INITIAL>"+="  matched(plus_equals);
 <INITIAL>"-="  matched(minus_equals);
-<INITIAL>"&="  matched(percent_equals);
 <INITIAL>"&="  matched(amp_equals);
 <INITIAL>"^="  matched(hat_equals);
 <INITIAL>"|="  matched(pipe_equals);
@@ -126,8 +125,10 @@ ALNUM ({DIGIT}|{ALPHA})
 
 <INITIAL>"if" matched(kw_if);
 <INITIAL>"else" matched(kw_else);
-<INITIAL>"return" matched(kw_return);
 <INITIAL>"switch" matched(kw_switch);
+<INITIAL>"return" matched(kw_return);
+<INITIAL>"break" matched(kw_break);
+<INITIAL>"continue" matched(kw_continue);
 <INITIAL>"case" matched(kw_case);
 <INITIAL>"default" matched(kw_default);
 <INITIAL>"while" matched(kw_while);

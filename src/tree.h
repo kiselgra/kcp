@@ -56,7 +56,12 @@ namespace ast {
 	struct statement;
 	struct expression_stmt;
 	struct if_stmt;
+	struct switch_stmt;
+	struct jump_stmt;
 	struct return_stmt;
+	struct break_stmt;
+	struct continue_stmt;
+	struct goto_stmt;
 	struct while_stmt;
 
 	struct visitor {
@@ -99,7 +104,12 @@ namespace ast {
 		virtual void visit(statement              *node) { /*XXX*/ }
 		virtual void visit(expression_stmt        *node) { forward(statement); }
 		virtual void visit(if_stmt                *node) { forward(statement); }
-		virtual void visit(return_stmt            *node) { forward(statement); }
+		virtual void visit(switch_stmt            *node) { forward(statement); }
+		virtual void visit(jump_stmt              *node) { forward(statement); }
+		virtual void visit(return_stmt            *node) { forward(jump_stmt); }
+		virtual void visit(break_stmt             *node) { forward(jump_stmt); }
+		virtual void visit(continue_stmt          *node) { forward(jump_stmt); }
+		virtual void visit(goto_stmt              *node) { forward(jump_stmt); }
 		virtual void visit(while_stmt             *node) { forward(statement); }
 		#undef forward
 	};
@@ -414,9 +424,39 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
-	struct return_stmt : public statement {
+	struct switch_stmt : public statement {
 		pointer_to<ast::expression> expression;
-		return_stmt(pointer_to<ast::expression> expr = nullptr) : expression(expr) {}
+		pointer_to<statement> body;
+		switch_stmt(pointer_to<ast::expression> expression, pointer_to<statement> body)
+		: expression(expression), body(body) {
+		}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct jump_stmt : public statement {
+		token kind;
+		pointer_to<ast::expression> expression; // ID for goto, return expression for return
+		jump_stmt(token kind, pointer_to<ast::expression> expr = nullptr) : kind(kind), expression(expr) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct return_stmt : public jump_stmt {
+		return_stmt(token t, pointer_to<ast::expression> expr = nullptr) : jump_stmt(t, expr) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct break_stmt : public jump_stmt {
+		break_stmt(token t) : jump_stmt(t) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct continue_stmt : public jump_stmt {
+		continue_stmt(token t) : jump_stmt(t) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
+
+	struct goto_stmt : public jump_stmt {
+		goto_stmt(token t, pointer_to<ast::expression> expr = nullptr) : jump_stmt(t, expr) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -473,7 +513,7 @@ namespace ast {
 		void visit(block *n) override;
 		void visit(expression_stmt *n) override;
 		void visit(if_stmt *n) override;
-		void visit(return_stmt *n) override;
+		void visit(jump_stmt *n) override;
 		void visit(while_stmt *n) override;
 
 	};
