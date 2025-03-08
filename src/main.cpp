@@ -15,6 +15,12 @@ int main(int argc, char **argv) {
 		cout << " - " << token::type_string(t.type) << ": " << t.text << " @" << t.line << "." << t.pos << endl;
 		cout << " * " << t << endl;
 	}
-	parse(tokens);
+	try {
+		parse(tokens);
+	}
+	catch (parse_error e) {
+		cerr << e.what() << endl;
+		return -1;
+	}
 	return 0;
 }

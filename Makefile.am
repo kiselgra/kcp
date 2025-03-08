@@ -1,4 +1,4 @@
-SUBDIRS = src
+SUBDIRS = src . test
 EXTRA_DIST = README.md
 
 all-local: kcp

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+TESTID=1
+function result() {
+	echo "$2 $((TESTID++)) - $1 	# $3"
+}
+
+function expect_good() {
+	../kcp "$1" >"$1.log" 2>&1
+	if [ "$?" == "0" ] ; then
+		result "$1" "ok" "$2"
+	else
+		result "$1" "not ok" "$2"
+	fi
+}
+
+function expect_bad() {
+	../kcp "$1" >"$1".log 2>&1
+	if [ "$?" == "0" ] ; then
+		result "$1" "not ok" "$2"
+	else
+		result "$1" "ok" "$2"
+	fi
+}
+
+echo '1..2'
+expect_good test.000.working.c 
+expect_bad  test.001.broken.c   "Reported properly"

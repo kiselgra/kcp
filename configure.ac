@@ -10,6 +10,7 @@ AC_LANG([C++])
 
 AC_PROG_LEX([noyywrap])
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile test/Makefile])
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_OUTPUT
 
