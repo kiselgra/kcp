@@ -58,6 +58,7 @@ ALNUM ({DIGIT}|{ALPHA})
 
 <INITIAL>"<<="  matched(left_left_equals);
 <INITIAL>">>="  matched(right_right_equals);
+<INITIAL>"..."  matched(ellipsis);
 
 <INITIAL>"*="  matched(star_equals);
 <INITIAL>"/="  matched(slash_equals);

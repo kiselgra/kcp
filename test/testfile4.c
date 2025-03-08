@@ -12,6 +12,12 @@ void random_break(void) {
 void foo(int) {
 }
 
+void foo() {
+}
+
+void foo (int, char c, ...) {
+}
+
 int main(int argc, char **argv) {
 	fak(100);
 	random_break();

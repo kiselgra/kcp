@@ -19,7 +19,7 @@ struct token {
 		// delimited
 		paren_l, paren_r, bracket_l, bracket_r, brace_l, brace_r,
 		// punctuation
-		comma, semicolon, question, exclamation, colon, dot,
+		comma, semicolon, question, exclamation, colon, dot, ellipsis,
 		// @=
 		equals, star_equals, slash_equals, percent_equals, plus_equals, minus_equals, left_left_equals, right_right_equals, amp_equals, hat_equals, pipe_equals,
 		// special words for declarations

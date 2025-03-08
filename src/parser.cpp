@@ -603,7 +603,15 @@ void parse(const vector<token> &tokens) {
 		}
 		else if (match(token::paren_l)) {
 			if (!check(token::paren_r))
-				do decl->add_parameter(parameter_declaration());
+				do 
+					if (match(token::ellipsis)) {
+						decl->ellipsis = true;
+						if (!check(token::paren_r))
+							throw parse_error(peek(), "Expect ')' after '...'");
+						break;
+					}
+					else
+						decl->add_parameter(parameter_declaration());
 				while (match(token::comma));
 			else
 				decl->add_parameter(nullptr); // meaning: function, but no specified params

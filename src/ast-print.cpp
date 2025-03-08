@@ -147,6 +147,8 @@ namespace ast {
 					x->traverse_with(this);
 				else
 					out << ind() << "null";
+			if (node->ellipsis)
+				out << ind() << "...";
 			out << ")";
 		}
 		out << ")";
