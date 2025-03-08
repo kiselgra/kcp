@@ -9,6 +9,9 @@ void random_break(void) {
 	goto togo;
 }
 
+void foo(int) {
+}
+
 int main(int argc, char **argv) {
 	fak(100);
 	random_break();

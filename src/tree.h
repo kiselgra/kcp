@@ -553,6 +553,7 @@ namespace ast {
 		void visit(identifier *n) override;
 		void visit(literal *n) override;
 		void visit(string_lit *n) override;
+		void visit(type_specifier *n) override;
 		
 		void visit(translation_unit *n) override;
 		void visit(declaration_specifiers *n) override;
