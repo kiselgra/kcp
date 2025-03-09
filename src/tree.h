@@ -41,6 +41,7 @@ namespace ast {
 	struct float_lit;
 	struct character_lit;
 	struct string_lit;
+	struct type_expression;
 	
 	struct translation_unit;
 	struct type_specifier;
@@ -72,31 +73,32 @@ namespace ast {
 
 	struct visitor {
 		#define forward(X) visit((X*)node)
-		virtual void visit(expression    *node) {}
-		virtual void visit(conditional   *node) { forward(expression); }
-		virtual void visit(n_ary         *node) { forward(expression); }
-		virtual void visit(sequence      *node) { forward(n_ary); }
-		virtual void visit(arith         *node) { forward(n_ary); }
-		virtual void visit(logical       *node) { forward(n_ary); }
-		virtual void visit(equality      *node) { forward(n_ary); }
-		virtual void visit(relational    *node) { forward(n_ary); }
-		virtual void visit(cast          *node) { forward(expression); }
-		virtual void visit(unary         *node) { forward(expression); }
-		virtual void visit(prefix        *node) { forward(unary); }
-		virtual void visit(postfix       *node) { forward(unary); }
-		virtual void visit(call          *node) { forward(expression); }
-		virtual void visit(subscript     *node) { forward(expression); }
-		virtual void visit(member_access *node) { forward(expression); }
-		virtual void visit(identifier    *node) { forward(expression); }
-		virtual void visit(literal       *node) { forward(expression); }
-		virtual void visit(number_lit    *node) { forward(literal); }
-		virtual void visit(integral_lit  *node) { forward(number_lit); }
-		virtual void visit(float_lit     *node) { forward(number_lit); }
-		virtual void visit(character_lit *node) { forward(literal); }
-		virtual void visit(string_lit    *node) { forward(literal); }
+		virtual void visit(expression      *node) {}
+		virtual void visit(conditional     *node) { forward(expression); }
+		virtual void visit(n_ary           *node) { forward(expression); }
+		virtual void visit(sequence        *node) { forward(n_ary); }
+		virtual void visit(arith           *node) { forward(n_ary); }
+		virtual void visit(logical         *node) { forward(n_ary); }
+		virtual void visit(equality        *node) { forward(n_ary); }
+		virtual void visit(relational      *node) { forward(n_ary); }
+		virtual void visit(cast            *node) { forward(expression); }
+		virtual void visit(unary           *node) { forward(expression); }
+		virtual void visit(prefix          *node) { forward(unary); }
+		virtual void visit(postfix         *node) { forward(unary); }
+		virtual void visit(call            *node) { forward(expression); }
+		virtual void visit(subscript       *node) { forward(expression); }
+		virtual void visit(member_access   *node) { forward(expression); }
+		virtual void visit(identifier      *node) { forward(expression); }
+		virtual void visit(literal         *node) { forward(expression); }
+		virtual void visit(number_lit      *node) { forward(literal); }
+		virtual void visit(integral_lit    *node) { forward(number_lit); }
+		virtual void visit(float_lit       *node) { forward(number_lit); }
+		virtual void visit(character_lit   *node) { forward(literal); }
+		virtual void visit(string_lit      *node) { forward(literal); }
+		virtual void visit(type_expression *node) { forward(expression); }
 		
 		virtual void visit(translation_unit       *node) {}
-		virtual void visit(type_specifier         *node) {}
+		virtual void visit(type_specifier         *node) { forward(identifier); }
 		virtual void visit(type_name              *node) { forward(type_specifier); }
 		virtual void visit(type_modifier          *node) { forward(type_specifier); }
 		virtual void visit(type_qualifier         *node) { forward(type_specifier); }
@@ -283,6 +285,12 @@ namespace ast {
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
+	struct type_expression : public expression { // in sizeof
+		pointer_to<declaration_specifiers> specifiers;
+		pointer_to<ast::declarator> declarator;
+		type_expression(pointer_to<declaration_specifiers> specifiers, pointer_to<ast::declarator> declarator) : specifiers(specifiers), declarator(declarator) {}
+		void traverse_with(visitor *v) override { v->visit(this); }
+	};
 
 
 
@@ -301,9 +309,8 @@ namespace ast {
 	};
 
 
-	struct type_specifier : public node {
-		::token name;
-		type_specifier(::token name) : name(name) {}
+	struct type_specifier : public identifier {
+		type_specifier(::token name) : identifier(name) {}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 
@@ -367,7 +374,7 @@ namespace ast {
 		}
 		bool is_typedef() const {
 			for (auto x : specifiers)
-				if (x->name == token::kw_typedef)
+				if (x->token == token::kw_typedef)
 					return true;
 			return false;
 		}

@@ -113,13 +113,13 @@ namespace ast {
 	void printer::visit(declaration_specifiers *node) {
 		header("decl-spec");
 		for (auto x : node->specifiers)
-			out << " " << x->name.text;
+			out << " " << x->token.text;
 		node->type->traverse_with(this);
 		out << ")";
 	}
 	
 	void printer::visit(type_specifier *node) {
-		out << ind() << "(type " << node->name.text << ")";
+		out << ind() << "(type " << node->token.text << ")";
 	}
 	
 	void printer::visit(declarator *node) {

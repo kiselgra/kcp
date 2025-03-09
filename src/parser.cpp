@@ -120,9 +120,12 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::expression>()> cast_exp;
 	std::function<pointer_to<ast::expression>()> assignment_exp;
 
+	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
+	std::function<pointer_to<ast::declarator>(bool)> declarator;
+
 	rule(type_name) {
-		auto tok = consume(token::identifier, "Expect identifier (for type name).");
-		return make_node<ast::identifier>(tok);
+		auto tok = consume(token::type_name, "Expect type name.");
+		return make_node<ast::type_name>(tok);
 	};
 	rule(identifier) {
 		auto tok = consume(token::identifier, "Expect identifier.");
@@ -197,9 +200,12 @@ void parse(const vector<token> &tokens) {
 		else if (match(token::size_of)) {
 			auto sizeof_token = previous();
 			if (match(token::paren_l)) {
-				auto type = type_name();
+				auto spec = declaration_specifiers();
+				auto decl = declarator(true);
+				if (decl->name)
+					throw parse_error(previous(), "Cannot give declarator names in sizeof type-expressions.");
 				consume(token::paren_r, "Expect ')' after type name.");
-				return make_node<unary>(sizeof_token, type);
+				return make_node<unary>(sizeof_token, make_node<type_expression>(spec, decl));
 			}
 			else {
 				auto sub = unary_exp();
@@ -209,14 +215,6 @@ void parse(const vector<token> &tokens) {
 		return postfix_exp();
 	};
 	frule(cast_exp) -> pointer_to<ast::expression> {
-// 		if (check(token::paren_l) && check1(token::type_name)) {	// cannot be matched, yet
-// 			consume(token::paren_l, "Did check this already");
-// 			auto type = type_name();
-// 			auto closing = consume(token::paren_r, "Expect ')' after cast target type.");
-// 			auto subexp = cast_exp();
-// 			return make_node<cast>(closing, type, subexp);
-// 		}
-// 		return unary_exp();
 		if (check(token::paren_l)) {
 			int restart = current;   // error recovery point
 			consume(token::paren_l, "Did check this already");
@@ -313,8 +311,6 @@ void parse(const vector<token> &tokens) {
 	 *
 	 */
 	std::function<pointer_to<ast::declaration>()> parameter_declaration;
-	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
-	std::function<pointer_to<ast::declarator>(bool)> declarator;
 	std::function<pointer_to<ast::declaration>(bool)> external_declaration;;
 	
 	std::function<pointer_to<ast::statement>()> statement;	//XXX might be statement
