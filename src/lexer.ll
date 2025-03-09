@@ -185,7 +185,7 @@ ALNUM ({DIGIT}|{ALPHA})
 <PP_REST>[1234 \t]+	                                { /* cout << "PP-suffix: '" << yytext << "'" << endl; */ }
 <PP_REST>\n							                { /* cout << "--> PP-done" << endl; */ BEGIN(INITIAL); }
 
-<PP_INFO>.	                                        { std::cerr << "Unrecognized cpp character '" << yytext << "'" << endl; }
+<PP_INFO>.	                                        { throw lexer_error(yylineno, col-yyleng, yytext, "Unmatched character on preprocessor line information"); }
 <PP_REST>.	                                        { std::cerr << "Unrecognized cpp character '" << yytext << "'" << endl; }
 
 <ATTRIB>"("                  { attribute_accum+="("; attrib_nest++; }

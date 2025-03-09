@@ -10,13 +10,17 @@ int main(int argc, char **argv) {
 		cerr << "Args!" << endl;
 		return -1;
 	}
-	auto tokens = lex_input(argv[1]);
-	for (auto t : tokens) {
-		cout << " - " << token::type_string(t.type) << ": " << t.text << " @" << t.line << "." << t.pos << endl;
-		cout << " * " << t << endl;
-	}
 	try {
+		auto tokens = lex_input(argv[1]);
+// 		for (auto t : tokens) {
+// 			cout << " - " << token::type_string(t.type) << ": " << t.text << " @" << t.line << "." << t.pos << endl;
+// 			cout << " * " << t << endl;
+// 		}
 		parse(tokens);
+	}
+	catch (lexer_error e) {
+		cerr << e.what() << endl;
+		return -1;
 	}
 	catch (parse_error e) {
 		cerr << e.what() << endl;

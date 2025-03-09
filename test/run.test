@@ -5,35 +5,50 @@ function result() {
 	echo "$2 $((TESTID++)) - $1$3"
 }
 
-function expect_good() {
-	if [ "$#" == "2" ] ; then
-		comment="	# $2"
+function test_it() {
+	testfile="$1"
+	comment="$2"
+	preproc="$3"
+	success_is="$4"
+	if [ "$success_is" == "ok" ] ; then failure_is="not ok" ; else failure_is="ok"; fi
+	if [ "$comment" != "" ] ; then comment="	# $comment"; fi
+	if [ "$preproc" == "yes" ] ; then
+		cpp "$1" > "$1.E"
+		../kcp "$1.E" >"$1.log" 2>&1
 	else
-		comment=""
+		../kcp "$1" >"$1.log" 2>&1
 	fi
-	../kcp "$1" >"$1.log" 2>&1
 	if [ "$?" == "0" ] ; then
-		result "$1" "ok" "$comment"
+		result "$1" "$success_is" "$comment"
 	else
-		result "$1" "not ok" "$comment"
+		result "$1" "$failure_is" "$comment"
 	fi
+}
+
+function expect_good() {
+	test_it "$1" "$2" "no" "ok"
+#	if [ "$#" == "2" ] ; then
+#		comment="	# $2"
+#	else
+#		comment=""
+#	fi
+#	../kcp "$1" >"$1.log" 2>&1
+#	if [ "$?" == "0" ] ; then
+#		result "$1" "ok" "$comment"
+#	else
+#		result "$1" "not ok" "$comment"
+#	fi
 }
 
 function expect_bad() {
-	if [ "$#" == "2" ] ; then
-		comment="	# $2"
-	else
-		comment=""
-	fi
-	../kcp "$1" >"$1".log 2>&1
-	if [ "$?" == "0" ] ; then
-		result "$1" "not ok" "$comment"
-	else
-		result "$1" "ok" "$comment"
-	fi
+	test_it "$1" "$2" "no" "not ok"
 }
 
-echo '1..7'
+function with_pp_expect_good() {
+	test_it "$1" "$2" "yes" "ok"
+}
+
+echo '1..14'
 expect_good test.001.working.c 
 expect_bad  test.002.broken.c   "Reported properly"
 expect_good test.003.identifier.c
@@ -41,3 +56,12 @@ expect_bad  test.004.identifier.misuse.c
 expect_good test.005.typedef.c
 expect_bad  test.006.typedef.tokens1.c
 expect_good test.007.typedef.tokens2.c
+expect_good test.008.struct.c
+expect_good test.009.struct.c
+expect_good test.010.enum.c
+expect_good test.011.loops.c
+expect_good test.012.jumps.c
+
+expect_bad          test.100.hello.world.c "Cannot compile w/o cpp"
+with_pp_expect_good test.100.hello.world.c
+
