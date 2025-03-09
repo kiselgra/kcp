@@ -115,6 +115,18 @@ void parse(const vector<token> &tokens) {
 				log << tokens[i];
 		log << endl;
 	};
+	
+	helper(next_is_expression) {
+		token t = peek();
+		switch (t.type) {
+		case token::identifier:
+		case token::integral: case token::floating: case token::character: case token::string: 
+		case token::star: case token::paren_l: case token::minus: case token::minus_minus:
+			return true;
+		default:
+			return false;
+		}
+	};
 
 	std::function<pointer_to<ast::expression>()> expression;
 	std::function<pointer_to<ast::expression>()> cast_exp;
@@ -123,7 +135,7 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
 	std::function<pointer_to<ast::declarator>(bool)> declarator;
 
-	rule(type_name) {
+	rule(type_name) { // XXX this is problematic as it does not cover all cases
 		auto tok = consume(token::type_name, "Expect type name.");
 		return make_node<ast::type_name>(tok);
 	};
@@ -215,21 +227,21 @@ void parse(const vector<token> &tokens) {
 		return postfix_exp();
 	};
 	frule(cast_exp) -> pointer_to<ast::expression> {
-		if (check(token::paren_l)) {
-			int restart = current;   // error recovery point
-			consume(token::paren_l, "Did check this already");
-			auto type = type_name(); // this checks for ID, not TYPENAME, so will succeed
+		if (match(token::paren_l)) {
+			if (next_is_expression()) {
+				rewind1();
+				return unary_exp();
+			}
+			auto spec = declaration_specifiers();
+			auto decl = declarator(true);
+			if (decl->name)
+				throw parse_error(previous(), "Cannot give declarator names in cast's type-expressions.");
+			consume(token::paren_r, "Expect ')' after type name.");
+			auto type = make_node<type_expression>(spec, decl);
 			if (check(token::paren_r)) {
 				auto closing = consume(token::paren_r, "Expect ')' after cast target type.");
 				auto subexp = cast_exp();
 				return make_node<cast>(closing, type, subexp);
-			}
-			else try {
-				current = restart;
-				return unary_exp();
-			}
-			catch (parse_error e) {
-				throw parse_error(e.at, std::string(e.what()) + "\nOr missing ')' after cast target type.");
 			}
 		}
 		return unary_exp();
@@ -315,18 +327,6 @@ void parse(const vector<token> &tokens) {
 	
 	std::function<pointer_to<ast::statement>()> statement;	//XXX might be statement
 	std::function<pointer_to<ast::block>()> compound_statement;
-
-	helper(next_is_expression) {
-		token t = peek();
-		switch (t.type) {
-		case token::identifier:
-		case token::integral: case token::floating: case token::character: case token::string: 
-		case token::star: case token::paren_l: case token::minus: case token::minus_minus:
-			return true;
-		default:
-			return false;
-		}
-	};
 
 	rule(if_statement) {
 		consume(token::paren_l, "Expect '(' after 'if'");
