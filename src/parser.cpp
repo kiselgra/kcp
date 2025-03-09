@@ -590,7 +590,7 @@ void parse(const vector<token> &tokens) {
 		else if (!allow_unnamed)
 			throw parse_error(peek(), "Expect name or nested declaration for declarator.");
 		// arrays and functions
-		if (match(token::bracket_l)) {
+		if (check(token::bracket_l)) {
 			while (match(token::bracket_l)) {
 				pointer_to<ast::expression> const_expr = nullptr;
 				if (!check(token::bracket_r))
