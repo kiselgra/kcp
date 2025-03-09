@@ -545,7 +545,7 @@ void parse(const vector<token> &tokens) {
 				int_mod = true;
 				all->add(make_node<ast::type_modifier>(previous()));
 			}
-			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern)) {
+			else if (match(token::kw_const, token::kw_volatile, token::kw_auto, token::kw_static, token::kw_register, token::kw_extern, token::kw_typedef)) {
 				all->add(make_node<ast::type_qualifier>(previous()));
 				if (previous() == token::kw_register)
 					int_mod = true;
@@ -633,7 +633,14 @@ void parse(const vector<token> &tokens) {
 		auto declaration = make_node<ast::var_declarations>(spec);
 		while (!match(token::semicolon)) {
 			auto decl = declarator(false);
+			bool is_typedef = spec->is_typedef();
+			if (is_typedef) {
+				assert(decl->name != nullptr);
+				register_type(decl->name->token);
+			}
 			if (match(token::brace_l) && allow_function) {
+				if (is_typedef)
+					throw parse_error(previous(), "Function definition cannot be a typedef.");
 				// we have a function definition
 				free_node(declaration);
 				auto block = compound_statement();

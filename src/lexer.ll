@@ -123,6 +123,7 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"static" matched(kw_static);
 <INITIAL>"auto" matched(kw_auto);
 <INITIAL>"register" matched(kw_register);
+<INITIAL>"typedef" matched(kw_typedef);
 
 <INITIAL>"if" matched(kw_if);
 <INITIAL>"else" matched(kw_else);

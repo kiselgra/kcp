@@ -365,6 +365,12 @@ namespace ast {
 		void add(pointer_to<type_name> spec) {
 			specifiers.push_back(spec);
 		}
+		bool is_typedef() const {
+			for (auto x : specifiers)
+				if (x->name == token::kw_typedef)
+					return true;
+			return false;
+		}
 		void traverse_with(visitor *v) override { v->visit(this); }
 	};
 

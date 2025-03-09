@@ -71,6 +71,7 @@ std::string token::type_string(enum token::type t) {
 	case kw_signed:
 	case kw_static:
 	case kw_struct:
+	case kw_typedef:
 	case kw_union:
 	case kw_unsigned:
 	case kw_void:
