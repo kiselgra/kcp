@@ -2,27 +2,42 @@
 
 TESTID=1
 function result() {
-	echo "$2 $((TESTID++)) - $1 	# $3"
+	echo "$2 $((TESTID++)) - $1$3"
 }
 
 function expect_good() {
+	if [ "$#" == "2" ] ; then
+		comment="	# $2"
+	else
+		comment=""
+	fi
 	../kcp "$1" >"$1.log" 2>&1
 	if [ "$?" == "0" ] ; then
-		result "$1" "ok" "$2"
+		result "$1" "ok" "$comment"
 	else
-		result "$1" "not ok" "$2"
+		result "$1" "not ok" "$comment"
 	fi
 }
 
 function expect_bad() {
+	if [ "$#" == "2" ] ; then
+		comment="	# $2"
+	else
+		comment=""
+	fi
 	../kcp "$1" >"$1".log 2>&1
 	if [ "$?" == "0" ] ; then
-		result "$1" "not ok" "$2"
+		result "$1" "not ok" "$comment"
 	else
-		result "$1" "ok" "$2"
+		result "$1" "ok" "$comment"
 	fi
 }
 
-echo '1..2'
-expect_good test.000.working.c 
-expect_bad  test.001.broken.c   "Reported properly"
+echo '1..7'
+expect_good test.001.working.c 
+expect_bad  test.002.broken.c   "Reported properly"
+expect_good test.003.identifier.c
+expect_bad  test.004.identifier.misuse.c
+expect_good test.005.typedef.c
+expect_bad  test.006.typedef.tokens1.c
+expect_good test.007.typedef.tokens2.c
