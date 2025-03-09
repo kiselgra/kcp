@@ -28,6 +28,7 @@ struct token {
 		kw_static, kw_auto, kw_extern, kw_register, kw_typedef,
 		// special words for statements
 		kw_if, kw_break, kw_case, kw_continue, kw_default, kw_do, kw_else, kw_for, kw_goto, kw_return, kw_switch, kw_while,
+		attribute, // the entire attribute block
 		// call setline('.', join(sort(split(getline('.'), ' ')), " "))
 	};
 	int line;
@@ -43,6 +44,9 @@ struct token {
 	}
 	static token make_string(const std::string &str, int line, int col, const std::string &file) {
 		return token(string, str, line, col, file);
+	}
+	static token make_attribute(const std::string &str, int line, int col, const std::string &file) {
+		return token(attribute, str, line, col, file);
 	}
 
 	bool operator==(enum type t) const { return type == t; }

@@ -30,6 +30,11 @@ static int last_line = 0;
 std::string string_accum = "";
 int string_accum_start = 0;
 
+std::string attribute_accum;
+int attribute_accum_col_start = 0;
+int attribute_accum_line_start = 0;
+int attrib_nest = 0;
+
 %}
 
 %option noyywrap
@@ -150,6 +155,7 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng, lexer_current_filename);
 
 <INITIAL>\" { string_accum = ""; string_accum_start = col; BEGIN(STRING); }
+<INITIAL>__attribute__{WHITE_SPACE}*  { attribute_accum = ""; attribute_accum_col_start = col; attribute_accum_line_start = yylineno; attrib_nest = 0; BEGIN(ATTRIB); }
 
 <INITIAL>{ALPHA}{ALNUM}*        matched(identifier);
 
@@ -177,6 +183,11 @@ ALNUM ({DIGIT}|{ALPHA})
 
 <PP_INFO>.	                                        { std::cerr << "Unrecognized cpp character '" << yytext << "'" << endl; }
 <PP_REST>.	                                        { std::cerr << "Unrecognized cpp character '" << yytext << "'" << endl; }
+
+<ATTRIB>"("                  { attribute_accum+="("; attrib_nest++; }
+<ATTRIB>")"                  { attribute_accum+=")"; attrib_nest--; if (attrib_nest==0) BEGIN(INITIAL);
+                               return token::make_attribute(attribute_accum, attribute_accum_line_start, attribute_accum_col_start, lexer_current_filename); }
+<ATTRIB>[^()]+               { attribute_accum+=yytext; }
 
 %%
 

@@ -649,6 +649,8 @@ void parse(const vector<token> &tokens) {
 				init = assignment_exp(); // TODO other cases, see "initializer"
 			}
 			declaration->add_init_decl(decl, init);
+			while (match(token::attribute))
+				declaration->add_attribute(previous());
 			if (!check(token::semicolon))
 				consume(token::comma, "Expect ';' or ',' after declarator.");
 		}

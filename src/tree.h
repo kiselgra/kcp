@@ -404,7 +404,11 @@ namespace ast {
 
 	struct declaration : public statement {
 		pointer_to<declaration_specifiers> specifiers;
+		vector<token> attributes;
 		declaration(pointer_to<declaration_specifiers> specifiers) : specifiers(specifiers) {
+		}
+		void add_attribute(token t) {
+			attributes.push_back(t);
 		}
 	};
 

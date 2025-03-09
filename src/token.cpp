@@ -54,6 +54,7 @@ std::string token::type_string(enum token::type t) {
 	case dot:                return ".";
 	case ellipsis:           return "...";
 	case arrow:              return "->";
+	case attribute:          return "__attribute__";
 							 // catchall:
 	case kw_auto:
 	case kw_break:
