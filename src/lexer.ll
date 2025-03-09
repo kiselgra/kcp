@@ -158,7 +158,8 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng, lexer_current_filename);
 
 <INITIAL>\" { string_accum = ""; string_accum_start = col; BEGIN(STRING); }
-<INITIAL>__attribute__{WHITE_SPACE}*  { attribute_accum = ""; attribute_accum_col_start = col; attribute_accum_line_start = yylineno; attrib_nest = 0; BEGIN(ATTRIB); }
+<INITIAL>__attribute__{WHITE_SPACE}*  { attribute_accum = yytext; attribute_accum_col_start = col; attribute_accum_line_start = yylineno; attrib_nest = 0; BEGIN(ATTRIB); }
+<INITIAL>__asm__{WHITE_SPACE}*  { attribute_accum = yytext; attribute_accum_col_start = col; attribute_accum_line_start = yylineno; attrib_nest = 0; BEGIN(ATTRIB); }
 
 <INITIAL>{ALPHA}{ALNUM}*        matched(identifier);
 
