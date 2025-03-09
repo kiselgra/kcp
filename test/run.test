@@ -27,17 +27,6 @@ function test_it() {
 
 function expect_good() {
 	test_it "$1" "$2" "no" "ok"
-#	if [ "$#" == "2" ] ; then
-#		comment="	# $2"
-#	else
-#		comment=""
-#	fi
-#	../kcp "$1" >"$1.log" 2>&1
-#	if [ "$?" == "0" ] ; then
-#		result "$1" "ok" "$comment"
-#	else
-#		result "$1" "not ok" "$comment"
-#	fi
 }
 
 function expect_bad() {
@@ -48,7 +37,7 @@ function with_pp_expect_good() {
 	test_it "$1" "$2" "yes" "ok"
 }
 
-echo '1..14'
+echo '1..16'
 expect_good test.001.working.c 
 expect_bad  test.002.broken.c   "Reported properly"
 expect_good test.003.identifier.c
@@ -64,4 +53,6 @@ expect_good test.012.jumps.c
 
 expect_bad          test.100.hello.world.c "Cannot compile w/o cpp"
 with_pp_expect_good test.100.hello.world.c
+with_pp_expect_good test.101.pg1.2024.08.returns.c
+with_pp_expect_good test.102.pg1.2024.08.seq.c
 

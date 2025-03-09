@@ -25,7 +25,7 @@ struct token {
 		equals, star_equals, slash_equals, percent_equals, plus_equals, minus_equals, left_left_equals, right_right_equals, amp_equals, hat_equals, pipe_equals,
 		// special words for declarations
 		size_of, kw_char, kw_const, kw_double, kw_enum, kw_float, kw_int, kw_long, kw_short, kw_signed, kw_struct, kw_union, kw_unsigned, kw_void, kw_volatile,
-		kw_static, kw_auto, kw_extern, kw_register, kw_typedef,
+		kw_static, kw_auto, kw_extern, kw_register, kw_typedef, kw_bool, kw_complex,
 		// special words for statements
 		kw_if, kw_break, kw_case, kw_continue, kw_default, kw_do, kw_else, kw_for, kw_goto, kw_return, kw_switch, kw_while,
 		attribute, // the entire attribute block

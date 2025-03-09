@@ -412,10 +412,10 @@ void parse(const vector<token> &tokens) {
 
 	// the loop body should be in statement()
 	frule(statement) -> pointer_to<ast::statement> {
-		if (verbose) {
-			log << "at statement(): next_is_exp=" << next_is_expression() << endl;
-			log_tokens(6);
-		}
+// 		if (verbose) {
+// 			log << "at statement(): next_is_exp=" << next_is_expression() << endl;
+// 			log_tokens(6);
+// 		}
 		// first one is a special case
 		if (check(token::identifier) && check1(token::colon)) {
 			auto id = identifier();
@@ -532,7 +532,7 @@ void parse(const vector<token> &tokens) {
 			return false;
 		};
 		while (true) {
-			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double)) {
+			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double, token::kw_bool, token::kw_complex)) {
 				type_duplicate_check();
 				all->type = make_node<ast::type_name>(previous());
 			}
@@ -664,7 +664,6 @@ void parse(const vector<token> &tokens) {
 	rule(translation_unit) {
 		auto root = make_node<ast::translation_unit>();
 		while (!at_end()) {
-			cout << "next " << peek() << endl;
 			root->add(external_declaration(true));
 		}
 		return root;

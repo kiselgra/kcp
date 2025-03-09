@@ -67,6 +67,8 @@ std::string token::type_string(enum token::type t) {
 	case kw_float:
 	case kw_int:
 	case kw_long:
+	case kw_bool:
+	case kw_complex:
 	case kw_register:
 	case kw_short:
 	case kw_signed:

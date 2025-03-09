@@ -125,6 +125,8 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"long" matched(kw_long);
 <INITIAL>"float" matched(kw_float);
 <INITIAL>"double" matched(kw_double);
+<INITIAL>"_Bool" matched(kw_bool);
+<INITIAL>"_Complex" matched(kw_complex);
 <INITIAL>"signed" matched(kw_signed);
 <INITIAL>"unsigned" matched(kw_unsigned);
 <INITIAL>"const" matched(kw_const);
