@@ -528,12 +528,19 @@ void parse(const vector<token> &tokens) {
 			if (all->type)
 				throw parse_error(previous(), "Duplicate type in declaration.");
 		};
+		helper(probably_builtin_type) {
+			if (check(token::identifier) && peek().text.starts_with("__builtin_")) {
+				advance();
+				return true;
+			}
+			return false;
+		};
 		while (true) {
 			if (match(token::kw_void, token::kw_char, token::kw_int, token::kw_float, token::kw_double)) {
 				type_duplicate_check();
 				all->type = make_node<ast::type_name>(previous());
 			}
-			else if (match(token::type_name))	{
+			else if (match(token::type_name) || probably_builtin_type())	{
 				type_duplicate_check();
 				all->type = make_node<ast::type_name>(previous());
 			}
