@@ -135,10 +135,6 @@ void parse(const vector<token> &tokens) {
 	std::function<pointer_to<ast::declaration_specifiers>()> declaration_specifiers;
 	std::function<pointer_to<ast::declarator>(bool)> declarator;
 
-	rule(type_name) { // XXX this is problematic as it does not cover all cases
-		auto tok = consume(token::type_name, "Expect type name.");
-		return make_node<ast::type_name>(tok);
-	};
 	rule(identifier) {
 		auto tok = consume(token::identifier, "Expect identifier.");
 		return make_node<ast::identifier>(tok);
