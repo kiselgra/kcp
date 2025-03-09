@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <sstream>
 
 struct token {
 	enum type {
@@ -33,14 +34,15 @@ struct token {
 	int pos;
 	enum type type;
 	std::string text;
+	std::string file;
 
-	token(enum type t, const std::string &str, int line, int col) : type(t), text(str), line(line), pos(col) {
+	token(enum type t, const std::string &str, int line, int col, const std::string &file) : type(t), text(str), line(line), pos(col), file(file) {
 	}
-	static token make_char(const std::string &str, int line, int col) {
-		return token(character, str.substr(1, str.length()-2), line, col);
+	static token make_char(const std::string &str, int line, int col, const std::string &file) {
+		return token(character, str.substr(1, str.length()-2), line, col, file);
 	}
-	static token make_string(const std::string &str, int line, int col) {
-		return token(string, str, line, col);
+	static token make_string(const std::string &str, int line, int col, const std::string &file) {
+		return token(string, str, line, col, file);
 	}
 
 	bool operator==(enum type t) const { return type == t; }
@@ -49,17 +51,22 @@ struct token {
 	static std::string type_string(enum type t);
 
 	friend std::ostream& operator<<(std::ostream &out, const token &t) {
-// 		out << "token['" << t.text << "' " << type_string(t.type) << " " << t.line << ":" << t.pos << "]";
-		out << "token['";
-		out << t.text;
-		out << "' ";
-		out << type_string(t.type);
-		out << " ";
-		out << t.line;
-		out << ":";
-		out << t.pos;
-		out << "]";
+		out << "token['" << t.text << "' " << type_string(t.type) << " " << t.file << ":" << t.line << "," << t.pos << "]";
 		return out;
+	}
+};
+
+struct lexer_error : public std::runtime_error {
+	int line, col;
+	std::string lexeme;
+	std::string full;
+	lexer_error(int line, int col, const std::string lexeme, const std::string &message) : runtime_error(message), line(line), col(col), lexeme(lexeme) {
+		std::ostringstream oss;
+		oss << "Lexer Error: " << message << " @" << line << ":" << col << ", got input '" << lexeme << "'";
+		full = oss.str();
+	}
+	const char* what() const noexcept override {	// order noexcept/override matters to gcc 14.2.1
+		return full.c_str();
 	}
 };
 

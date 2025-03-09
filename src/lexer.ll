@@ -7,24 +7,25 @@ using std::cout, std::endl;
 
 #define YY_DECL token yylex(void)
 
-#define LEX_DEBUG_OUT
+//#define LEX_DEBUG_OUT
 #ifdef LEX_DEBUG_OUT
 #define OUT(X) cout << X << endl
 #else
 #define OUT(X)
 #endif
 
+std::string lexer_current_filename;
 static int col = 0;
 static int last_line = 0;
 
 #define YY_USER_ACTION \
-  printf("matched token '%s' of len %d\n", yytext, yyleng); \
+  /* printf("matched token '%s' of len %d [state %d]\n", yytext, yyleng, yy_start); */ \
   if (last_line != yylineno) \
     last_line = yylineno, col = yyleng; \
   else \
     col += yyleng;
 
-#define matched(X) return token(token::X, yytext, yylineno, col-yyleng)
+#define matched(X) return token(token::X, yytext, yylineno, col-yyleng, lexer_current_filename)
 
 std::string string_accum = "";
 int string_accum_start = 0;
@@ -42,11 +43,17 @@ ALNUM ({DIGIT}|{ALPHA})
 %s COMMENT
 %s LINE_COMMENT
 %s STRING
-
+%s PP_INFO
+%s PP_FILE
+%s PP_REST
+%s ATTRIB
 
 %%
 
 <<EOF>>										matched(eof);
+
+<INITIAL>"\#"  { BEGIN(PP_INFO); }
+
 <INITIAL>{WHITE_SPACE}						/*ignore*/
 
 <INITIAL>"-"?{DIGIT}+"."{DIGIT}*("e""-"?{DIGIT}+)?			matched(floating);
@@ -122,6 +129,7 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"enum" matched(kw_enum);
 <INITIAL>"static" matched(kw_static);
 <INITIAL>"auto" matched(kw_auto);
+<INITIAL>"extern" matched(kw_extern);
 <INITIAL>"register" matched(kw_register);
 <INITIAL>"typedef" matched(kw_typedef);
 
@@ -138,30 +146,40 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"for" matched(kw_for);
 <INITIAL>"goto" matched(kw_goto);
 
-<INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng);
-<INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng);
+<INITIAL>"'"."'" return token::make_char(yytext, yylineno, col-yyleng, lexer_current_filename);
+<INITIAL>"'\\"."'" return token::make_char(yytext, yylineno, col-yyleng, lexer_current_filename);
 
 <INITIAL>\" { string_accum = ""; string_accum_start = col; BEGIN(STRING); }
 
 <INITIAL>{ALPHA}{ALNUM}*        matched(identifier);
 
-<INITIAL>.									{ 	OUT("char: " << (int)yytext[0] << "[" << yytext[0] << "]"); }
+<INITIAL>.									{ 	std::cerr << "unmatched char: " << (int)yytext[0] << "[" << yytext[0] << "]" << endl; }
 
 <LINE_COMMENT>\n							BEGIN(INITIAL);
 <LINE_COMMENT>.*							{	OUT("line comment: " << yytext); }
 
 <COMMENT>"*/"       BEGIN(INITIAL);
-<COMMENT>.*         OUT("comment: " << yytext);
+<COMMENT>.*         { OUT("comment: " << yytext); }
 
 <STRING>\\\" string_accum += '"';
 <STRING>\\n string_accum += '\n';
 <STRING>\\t string_accum += '\t';
 <STRING>\\r string_accum += '\r';
-<STRING>\" { BEGIN(INITIAL); return token::make_string(string_accum, yylineno, string_accum_start); }
+<STRING>\" { BEGIN(INITIAL); return token::make_string(string_accum, yylineno, string_accum_start, lexer_current_filename); }
 <STRING>[^\n"\\] string_accum += yytext;
-<STRING>\n std::cerr << "Lexer error on line " << yylineno << ": strings may not contain newlines." << std::endl;
+<STRING>\n throw lexer_error(yylineno, col-yyleng, string_accum, "strings may not contain newlines.");
+
+<PP_INFO>{WHITE_SPACE}+{DIGIT}+{WHITE_SPACE}+\"     { yylineno=atoi(yytext)-1; /* cout << "LINE is now " << yylineno << endl; */ BEGIN(PP_FILE); }
+<PP_FILE>[^"]*                                      { /* cout << "PP-\"m: '" << yytext << "'" << endl; */ lexer_current_filename = yytext; }
+<PP_FILE>\"                                         { /* cout << "PP-\"m: '" << yytext << "'" << endl; */ BEGIN(PP_REST); }
+<PP_REST>[1234 \t]+	                                { /* cout << "PP-suffix: '" << yytext << "'" << endl; */ }
+<PP_REST>\n							                { /* cout << "--> PP-done" << endl; */ BEGIN(INITIAL); }
+
+<PP_INFO>.	                                        { std::cerr << "Unrecognized cpp character '" << yytext << "'" << endl; }
+<PP_REST>.	                                        { std::cerr << "Unrecognized cpp character '" << yytext << "'" << endl; }
 
 %%
+
 
 #include <string>
 #include <vector>
@@ -169,6 +187,7 @@ ALNUM ({DIGIT}|{ALPHA})
 
 
 std::vector<token> lex_input(const std::string &filename) {
+  lexer_current_filename = filename;
   std::vector<token> tokens;
   yyin = fopen(filename.c_str(), "r");
 

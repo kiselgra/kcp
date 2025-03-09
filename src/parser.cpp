@@ -56,14 +56,14 @@ void parse(const vector<token> &tokens) {
 		return false;
 	};
 	helper(as_type, token t) {
-		return token(token::type_name, t.text, t.line, t.pos);
+		return token(token::type_name, t.text, t.line, t.pos, "");
 	};
 	helper(fix_token, token t) {
 		if (is_type(t))
 			return as_type(t);
 		return t;
 	};
-	push_scope(token(token::eof, "global scope", -1, -1));
+	push_scope(token(token::eof, "global scope", -1, -1, ""));
 	
 	// token access
 	helper(at_end) {
@@ -400,7 +400,7 @@ void parse(const vector<token> &tokens) {
 				init = external_declaration(false);
 		pointer_to<ast::expression> expr = nullptr;
 		if (match(token::semicolon)) {
-			expr = make_node<integral_lit>(token(token::integral, "1", -1, -1));
+			expr = make_node<integral_lit>(token(token::integral, "1", -1, -1, ""));
 		}
 		else {
 			expr = expression();
@@ -559,7 +559,7 @@ void parse(const vector<token> &tokens) {
 
 		if (!all->type)
 			if (int_mod)  // if there is unsigned, etc -> implicity type is int
-				all->type = make_node<ast::type_name>(token(token::kw_int, "int", -1, -1));
+				all->type = make_node<ast::type_name>(token(token::kw_int, "int", -1, -1, ""));
 			else
 				throw parse_error(peek(), "Expect type name for declaration.");
 		
