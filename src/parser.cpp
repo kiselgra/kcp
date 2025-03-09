@@ -577,10 +577,11 @@ void parse(const vector<token> &tokens) {
 		auto decl = make_node<ast::declarator>();
 		// pointers
 		while (match(token::star)) {
-			bool c = false, v = false;
+			bool c = false, v = false, r = false;
 			if (match(token::kw_const))    c = true;
 			if (match(token::kw_volatile)) v = true;
-			decl->add_pointer(c, v);
+			if (match(token::kw_restrict)) r = true;
+			decl->add_pointer(c, v, r);
 		}
 		// name / nesting
 		if (match(token::identifier)) {

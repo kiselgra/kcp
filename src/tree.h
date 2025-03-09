@@ -383,14 +383,14 @@ namespace ast {
 
 	struct declarator : public node {
 		struct pointer_qualifier {
-			bool c, v;
+			bool c, v, r;
 		};
 		vector<pointer_qualifier> pointer;
 		vector<pointer_to<expression>> array;  // nullptr-entries correspond do unsized dimensions
 		vector<pointer_to<declaration>> fn_params; // if single entry is nullptr then this has no specified arguments (ie arbitrary)
 		bool ellipsis = false;
 		pointer_to<identifier> name;
-		void add_pointer(bool c, bool v) {
+		void add_pointer(bool c, bool v, bool r) {
 			pointer.push_back({c, v});
 		}
 		void add_array(pointer_to<expression> array_size) {

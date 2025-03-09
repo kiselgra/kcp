@@ -29,6 +29,7 @@ struct token {
 		// special words for statements
 		kw_if, kw_break, kw_case, kw_continue, kw_default, kw_do, kw_else, kw_for, kw_goto, kw_return, kw_switch, kw_while,
 		attribute, // the entire attribute block
+		kw_restrict,
 		// call setline('.', join(sort(split(getline('.'), ' ')), " "))
 	};
 	int line;

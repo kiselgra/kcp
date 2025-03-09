@@ -128,6 +128,7 @@ namespace ast {
 			out << " *";
 			if (p.c) out << " const";
 			if (p.v) out << " volatile";
+			if (p.r) out << " restrict";
 		}
 		if (node->name)
 			node->name->traverse_with(this);

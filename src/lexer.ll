@@ -137,6 +137,9 @@ ALNUM ({DIGIT}|{ALPHA})
 <INITIAL>"extern" matched(kw_extern);
 <INITIAL>"register" matched(kw_register);
 <INITIAL>"typedef" matched(kw_typedef);
+<INITIAL>"restrict" matched(kw_restrict);
+<INITIAL>"__restrict" matched(kw_restrict);
+<INITIAL>"__restrict__" matched(kw_restrict);
 
 <INITIAL>"if" matched(kw_if);
 <INITIAL>"else" matched(kw_else);
